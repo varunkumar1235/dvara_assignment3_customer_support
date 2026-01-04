@@ -52,11 +52,36 @@ const createComment = async (req, res, next) => {
       [ticket_id, userId, content]
     );
 
-    // Update ticket updated_at
-    await pool.query(
-      'UPDATE tickets SET updated_at = $1 WHERE id = $2',
-      [new Date(), ticket_id]
+    const now = new Date();
+
+    // Check if this is the first response (first comment by an agent)
+    const existingComments = await pool.query(
+      'SELECT COUNT(*) as count FROM comments WHERE ticket_id = $1',
+      [ticket_id]
     );
+
+    const isFirstResponse = existingComments.rows[0].count === '1';
+
+    // Update ticket - set first_response_at if this is the first comment
+    if (isFirstResponse) {
+      // Set first response timestamp and update SLA deadline (72 hours from now for resolution)
+      const resolutionDeadline = new Date(now);
+      resolutionDeadline.setHours(resolutionDeadline.getHours() + 72);
+
+      await pool.query(
+        `UPDATE tickets 
+         SET updated_at = $1, 
+             first_response_at = $1,
+             sla_deadline = $2
+         WHERE id = $3`,
+        [now, resolutionDeadline, ticket_id]
+      );
+    } else {
+      await pool.query(
+        'UPDATE tickets SET updated_at = $1 WHERE id = $2',
+        [now, ticket_id]
+      );
+    }
 
     // Get comment with user info
     const commentResult = await pool.query(

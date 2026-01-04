@@ -113,9 +113,27 @@ const Dashboard = () => {
               </TableRow>
             ) : (
               tickets.map((ticket) => (
-                <TableRow key={ticket.id}>
+                <TableRow 
+                  key={ticket.id}
+                  sx={{
+                    backgroundColor: ticket.escalated ? 'rgba(255, 152, 0, 0.1)' : 'inherit',
+                    borderLeft: ticket.escalated ? '4px solid #ff9800' : 'none',
+                  }}
+                >
                   <TableCell>#{ticket.id}</TableCell>
-                  <TableCell>{ticket.title}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {ticket.title}
+                      {ticket.escalated && (
+                        <Chip
+                          label="ESCALATED"
+                          color="warning"
+                          size="small"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      )}
+                    </Box>
+                  </TableCell>
                   <TableCell>
                     <Chip
                       label={ticket.status.replace('_', ' ')}
@@ -123,7 +141,24 @@ const Dashboard = () => {
                       size="small"
                     />
                   </TableCell>
-                  <TableCell>{ticket.priority}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip
+                        label={ticket.priority.toUpperCase()}
+                        color={
+                          ticket.priority === 'urgent' ? 'error' :
+                          ticket.priority === 'high' ? 'warning' :
+                          ticket.priority === 'medium' ? 'info' : 'default'
+                        }
+                        size="small"
+                      />
+                      {ticket.escalation_count > 0 && (
+                        <Typography variant="caption" color="warning.main">
+                          (Escalated {ticket.escalation_count}x)
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
                   {role !== 'customer' && (
                     <TableCell>{ticket.customer_name || 'N/A'}</TableCell>
                   )}
@@ -150,4 +185,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
 

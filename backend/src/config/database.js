@@ -38,7 +38,10 @@ const initDatabase = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         resolved_at TIMESTAMP,
         closed_at TIMESTAMP,
-        sla_deadline TIMESTAMP
+        sla_deadline TIMESTAMP,
+        first_response_at TIMESTAMP,
+        escalated BOOLEAN DEFAULT FALSE,
+        escalation_count INTEGER DEFAULT 0
       )
     `);
 
@@ -76,6 +79,46 @@ const initDatabase = async () => {
       CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
       CREATE INDEX IF NOT EXISTS idx_comments_ticket ON comments(ticket_id);
       CREATE INDEX IF NOT EXISTS idx_files_ticket ON files(ticket_id);
+    `);
+
+    // Add SLA columns if they don't exist (for existing databases)
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='tickets' AND column_name='first_response_at') THEN
+          ALTER TABLE tickets ADD COLUMN first_response_at TIMESTAMP;
+        END IF;
+      END $$;
+    `);
+
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='tickets' AND column_name='escalated') THEN
+          ALTER TABLE tickets ADD COLUMN escalated BOOLEAN DEFAULT FALSE;
+        END IF;
+      END $$;
+    `);
+
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='tickets' AND column_name='escalation_count') THEN
+          ALTER TABLE tickets ADD COLUMN escalation_count INTEGER DEFAULT 0;
+        END IF;
+      END $$;
+    `);
+
+    // Update existing tickets to set default values
+    await pool.query(`
+      UPDATE tickets SET escalated = FALSE WHERE escalated IS NULL;
+    `);
+
+    await pool.query(`
+      UPDATE tickets SET escalation_count = 0 WHERE escalation_count IS NULL;
     `);
 
     console.log("Database schema initialized successfully");

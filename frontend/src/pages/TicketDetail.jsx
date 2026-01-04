@@ -208,10 +208,27 @@ const TicketDetail = () => {
         </Alert>
       )}
 
-      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 3, 
+          mb: 3,
+          borderLeft: ticket.escalated ? '6px solid #ff9800' : 'none',
+          backgroundColor: ticket.escalated ? 'rgba(255, 152, 0, 0.05)' : 'inherit',
+        }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h4">Ticket #{ticket.id}</Typography>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h4">Ticket #{ticket.id}</Typography>
+            {ticket.escalated && (
+              <Chip
+                label="ESCALATED"
+                color="warning"
+                sx={{ mt: 1, fontWeight: 'bold' }}
+              />
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             {slaTime && (
               <Chip
                 label={slaTime.text}
@@ -223,8 +240,25 @@ const TicketDetail = () => {
               label={ticket.status.replace('_', ' ')}
               color={ticket.status === 'closed' ? 'default' : 'primary'}
             />
+            <Chip
+              label={ticket.priority.toUpperCase()}
+              color={
+                ticket.priority === 'urgent' ? 'error' :
+                ticket.priority === 'high' ? 'warning' :
+                ticket.priority === 'medium' ? 'info' : 'default'
+              }
+              size="small"
+            />
           </Box>
         </Box>
+        
+        {ticket.escalated && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This ticket has been escalated due to SLA breach. 
+            {ticket.escalation_count > 1 && ` (Escalated ${ticket.escalation_count} times)`}
+            Priority has been increased and the ticket has been reset. A new agent needs to be assigned.
+          </Alert>
+        )}
 
         <Typography variant="h6" gutterBottom>
           {ticket.title}

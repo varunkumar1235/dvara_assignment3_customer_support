@@ -19,13 +19,13 @@ const createTicket = async (req, res, next) => {
       return res.status(400).json({ error: 'Title and description are required' });
     }
 
-    // Calculate SLA deadline (24 hours from now)
+    // Calculate SLA deadline (24 hours from now for first response)
     const slaDeadline = new Date();
     slaDeadline.setHours(slaDeadline.getHours() + 24);
 
     const result = await pool.query(
-      `INSERT INTO tickets (title, description, priority, customer_id, sla_deadline)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO tickets (title, description, priority, customer_id, sla_deadline, escalated, escalation_count)
+       VALUES ($1, $2, $3, $4, $5, FALSE, 0)
        RETURNING *`,
       [title, description, priority || 'medium', customerId, slaDeadline]
     );
@@ -72,6 +72,11 @@ const createTicket = async (req, res, next) => {
 const getTickets = async (req, res, next) => {
   try {
     const { role, id } = req.user;
+    
+    // Check all tickets for SLA breaches before returning
+    const slaService = require('../services/slaService');
+    await slaService.checkAllTicketsForSLA();
+
     let query;
     let params;
 
@@ -113,6 +118,10 @@ const getTicket = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { role, id: userId } = req.user;
+
+    // Check for SLA breach and escalate if needed
+    const slaService = require('../services/slaService');
+    await slaService.checkTicketSLA(id);
 
     const ticketResult = await pool.query(
       `SELECT t.*, 
