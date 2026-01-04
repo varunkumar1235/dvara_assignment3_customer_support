@@ -21,7 +21,7 @@ const createComment = async (req, res, next) => {
 
     // Verify ticket exists and check if it's assigned to this agent
     const ticketResult = await pool.query(
-      'SELECT id, agent_id FROM tickets WHERE id = $1',
+      'SELECT id, agent_id, status FROM tickets WHERE id = $1',
       [ticket_id]
     );
     
@@ -31,7 +31,13 @@ const createComment = async (req, res, next) => {
 
     const ticket = ticketResult.rows[0];
 
+    // Don't allow comments on closed tickets
+    if (ticket.status === 'closed') {
+      return res.status(400).json({ error: 'Cannot comment on closed tickets' });
+    }
+
     // If ticket has an agent assigned, only that agent can comment
+    // Exception: if ticket is reopened (status = 'open' and agent_id is NULL), any agent can take it
     if (ticket.agent_id && ticket.agent_id !== userId) {
       return res.status(403).json({ error: 'This ticket is assigned to another agent. Only the assigned agent can respond.' });
     }
@@ -64,9 +70,9 @@ const createComment = async (req, res, next) => {
 
     // Update ticket - set first_response_at if this is the first comment
     if (isFirstResponse) {
-      // Set first response timestamp and update SLA deadline (72 hours from now for resolution)
+      // Set first response timestamp and update SLA deadline (15 minutes from now for resolution)
       const resolutionDeadline = new Date(now);
-      resolutionDeadline.setHours(resolutionDeadline.getHours() + 72);
+      resolutionDeadline.setMinutes(resolutionDeadline.getMinutes() + 15);
 
       await pool.query(
         `UPDATE tickets 

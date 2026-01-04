@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
@@ -21,16 +21,16 @@ import {
   InputLabel,
   Card,
   CardContent,
-} from '@mui/material';
+} from "@mui/material";
 import {
   ArrowBack,
   Send,
   AttachFile,
   Download,
   Delete,
-} from '@mui/icons-material';
-import api from '../utils/api';
-import { getUserRole, getUser } from '../utils/auth';
+} from "@mui/icons-material";
+import api from "../utils/api";
+import { getUserRole, getUser } from "../utils/auth";
 
 const TicketDetail = () => {
   const { id } = useParams();
@@ -41,11 +41,11 @@ const TicketDetail = () => {
   const [comments, setComments] = useState([]);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [commentText, setCommentText] = useState('');
+  const [error, setError] = useState("");
+  const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     fetchTicket();
@@ -59,7 +59,7 @@ const TicketDetail = () => {
       setFiles(response.data.files || []);
       setStatus(response.data.ticket.status);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to fetch ticket');
+      setError(err.response?.data?.error || "Failed to fetch ticket");
     } finally {
       setLoading(false);
     }
@@ -74,10 +74,10 @@ const TicketDetail = () => {
       // Upload file if selected
       if (selectedFile) {
         const fileFormData = new FormData();
-        fileFormData.append('file', selectedFile);
-        fileFormData.append('ticket_id', id);
-        await api.post('/files/upload', fileFormData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+        fileFormData.append("file", selectedFile);
+        fileFormData.append("ticket_id", id);
+        await api.post("/files/upload", fileFormData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         // Refresh files list
         const filesResponse = await api.get(`/tickets/${id}`);
@@ -85,16 +85,16 @@ const TicketDetail = () => {
       }
 
       // Add comment
-      const response = await api.post('/comments', {
+      const response = await api.post("/comments", {
         ticket_id: id,
         content: commentText,
       });
 
       setComments([...comments, response.data.comment]);
-      setCommentText('');
+      setCommentText("");
       setSelectedFile(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add comment');
+      setError(err.response?.data?.error || "Failed to add comment");
     } finally {
       setSubmitting(false);
     }
@@ -106,7 +106,7 @@ const TicketDetail = () => {
       setStatus(newStatus);
       setTicket({ ...ticket, status: newStatus });
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update status');
+      setError(err.response?.data?.error || "Failed to update status");
     }
   };
 
@@ -114,13 +114,42 @@ const TicketDetail = () => {
     try {
       setSubmitting(true);
       const response = await api.post(`/tickets/${id}/confirm`);
-      setStatus('closed');
-      setTicket({ ...ticket, status: 'closed' });
-      setError('');
+      setStatus("closed");
+      setTicket({ ...ticket, status: "closed" });
+      setError("");
       // Show success message
-      alert('Ticket confirmed and closed successfully!');
+      alert("Ticket confirmed and closed successfully!");
+      fetchTicket(); // Refresh ticket data
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to confirm ticket');
+      setError(err.response?.data?.error || "Failed to confirm ticket");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRejectResolved = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to reject this resolution? The ticket will be reopened and escalated."
+      )
+    ) {
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const response = await api.post(`/tickets/${id}/reject`);
+      setStatus("open");
+      setTicket({
+        ...ticket,
+        status: "open",
+        agent_id: null,
+        priority: response.data.ticket.priority,
+      });
+      setError("");
+      alert("Ticket rejected and reopened. Priority has been escalated.");
+      fetchTicket(); // Refresh ticket data
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to reject ticket");
     } finally {
       setSubmitting(false);
     }
@@ -129,20 +158,23 @@ const TicketDetail = () => {
   const handleFileDownload = async (fileId, filename) => {
     try {
       // Use the API with authentication token
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/files/${fileId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:5000/api/files/${fileId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to download file');
+        throw new Error("Failed to download file");
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
@@ -150,7 +182,7 @@ const TicketDetail = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      setError('Failed to download file: ' + error.message);
+      setError("Failed to download file: " + error.message);
     }
   };
 
@@ -159,15 +191,16 @@ const TicketDetail = () => {
   };
 
   const calculateSLATime = () => {
-    if (!ticket?.sla_deadline) return null;
+    // Don't show SLA timer for closed tickets
+    if (!ticket?.sla_deadline || ticket.status === "closed") return null;
     const deadline = new Date(ticket.sla_deadline);
     const now = new Date();
     const diff = deadline - now;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (diff < 0) {
-      return { overdue: true, text: 'SLA Overdue' };
+      return { overdue: true, text: "SLA Overdue" };
     }
     return { overdue: false, text: `${hours}h ${minutes}m remaining` };
   };
@@ -177,7 +210,7 @@ const TicketDetail = () => {
   if (loading) {
     return (
       <Container>
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
         </Box>
       </Container>
@@ -193,70 +226,85 @@ const TicketDetail = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, mx: "auto" }}>
       <Button
         startIcon={<ArrowBack />}
-        onClick={() => navigate('/')}
+        onClick={() => navigate("/")}
         sx={{ mb: 2 }}
       >
         Back to Tickets
       </Button>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
           {error}
         </Alert>
       )}
 
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 3, 
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
           mb: 3,
-          borderLeft: ticket.escalated ? '6px solid #ff9800' : 'none',
-          backgroundColor: ticket.escalated ? 'rgba(255, 152, 0, 0.05)' : 'inherit',
+          borderLeft: ticket.escalated ? "6px solid #ff9800" : "none",
+          backgroundColor: ticket.escalated
+            ? "rgba(255, 152, 0, 0.05)"
+            : "inherit",
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
           <Box>
             <Typography variant="h4">Ticket #{ticket.id}</Typography>
             {ticket.escalated && (
               <Chip
                 label="ESCALATED"
                 color="warning"
-                sx={{ mt: 1, fontWeight: 'bold' }}
+                sx={{ mt: 1, fontWeight: "bold" }}
               />
             )}
           </Box>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             {slaTime && (
               <Chip
                 label={slaTime.text}
-                color={slaTime.overdue ? 'error' : 'warning'}
+                color={slaTime.overdue ? "error" : "warning"}
                 size="small"
               />
             )}
             <Chip
-              label={ticket.status.replace('_', ' ')}
-              color={ticket.status === 'closed' ? 'default' : 'primary'}
+              label={ticket.status.replace("_", " ")}
+              color={ticket.status === "closed" ? "default" : "primary"}
             />
             <Chip
               label={ticket.priority.toUpperCase()}
               color={
-                ticket.priority === 'urgent' ? 'error' :
-                ticket.priority === 'high' ? 'warning' :
-                ticket.priority === 'medium' ? 'info' : 'default'
+                ticket.priority === "urgent"
+                  ? "error"
+                  : ticket.priority === "high"
+                  ? "warning"
+                  : ticket.priority === "medium"
+                  ? "info"
+                  : "default"
               }
               size="small"
             />
           </Box>
         </Box>
-        
+
         {ticket.escalated && (
           <Alert severity="warning" sx={{ mb: 2 }}>
-            This ticket has been escalated due to SLA breach. 
-            {ticket.escalation_count > 1 && ` (Escalated ${ticket.escalation_count} times)`}
-            Priority has been increased and the ticket has been reset. A new agent needs to be assigned.
+            This ticket has been escalated due to SLA breach.
+            {ticket.escalation_count > 1 &&
+              ` (Escalated ${ticket.escalation_count} times)`}
+            Priority has been increased and the ticket has been reset. A new
+            agent needs to be assigned.
           </Alert>
         )}
 
@@ -279,11 +327,11 @@ const TicketDetail = () => {
 
         <Divider sx={{ my: 2 }} />
 
-        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
           {ticket.description}
         </Typography>
 
-        {role === 'agent' && (
+        {role === "agent" && ticket.status !== "closed" && (
           <Box sx={{ mt: 3 }}>
             <FormControl fullWidth>
               <InputLabel>Status</InputLabel>
@@ -300,10 +348,18 @@ const TicketDetail = () => {
             </FormControl>
           </Box>
         )}
-        {role === 'admin' && (
+        {role === "agent" && ticket.status === "closed" && (
           <Box sx={{ mt: 3 }}>
             <Alert severity="info">
-              Admins can only view tickets. Only agents can update ticket status.
+              This ticket is closed and cannot be modified.
+            </Alert>
+          </Box>
+        )}
+        {role === "admin" && (
+          <Box sx={{ mt: 3 }}>
+            <Alert severity="info">
+              Admins can only view tickets. Only agents can update ticket
+              status.
             </Alert>
           </Box>
         )}
@@ -321,7 +377,9 @@ const TicketDetail = () => {
                 secondaryAction={
                   <IconButton
                     edge="end"
-                    onClick={() => handleFileDownload(file.id, file.original_name)}
+                    onClick={() =>
+                      handleFileDownload(file.id, file.original_name)
+                    }
                   >
                     <Download />
                   </IconButton>
@@ -349,7 +407,13 @@ const TicketDetail = () => {
             {comments.map((comment) => (
               <Card key={comment.id} sx={{ mb: 2 }}>
                 <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 1,
+                    }}
+                  >
                     <Typography variant="subtitle2" fontWeight="bold">
                       {comment.username} ({comment.role})
                     </Typography>
@@ -365,7 +429,7 @@ const TicketDetail = () => {
         )}
       </Paper>
 
-      {role === 'agent' && (
+      {role === "agent" && ticket.status !== "closed" && (
         <Paper elevation={3} sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
             Add Comment
@@ -380,7 +444,7 @@ const TicketDetail = () => {
               placeholder="Write a comment..."
               margin="normal"
             />
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"
                 component="label"
@@ -394,7 +458,7 @@ const TicketDetail = () => {
                 />
               </Button>
               {selectedFile && (
-                <Typography variant="body2" sx={{ alignSelf: 'center' }}>
+                <Typography variant="body2" sx={{ alignSelf: "center" }}>
                   {selectedFile.name}
                 </Typography>
               )}
@@ -404,13 +468,20 @@ const TicketDetail = () => {
                 startIcon={<Send />}
                 disabled={submitting || !commentText.trim()}
               >
-                {submitting ? <CircularProgress size={24} /> : 'Send'}
+                {submitting ? <CircularProgress size={24} /> : "Send"}
               </Button>
             </Box>
           </form>
         </Paper>
       )}
-      {role === 'admin' && (
+      {role === "agent" && ticket.status === "closed" && (
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Alert severity="info">
+            This ticket is closed. Comments cannot be added to closed tickets.
+          </Alert>
+        </Paper>
+      )}
+      {role === "admin" && (
         <Paper elevation={3} sx={{ p: 3 }}>
           <Alert severity="info">
             Admins can only view tickets. Only agents can respond to tickets.
@@ -418,32 +489,53 @@ const TicketDetail = () => {
         </Paper>
       )}
 
-      {role === 'customer' && (
+      {role === "customer" && (
         <Paper elevation={3} sx={{ p: 3 }}>
-          {ticket.status === 'resolved' ? (
+          {ticket.status === "resolved" ? (
             <Box>
               <Alert severity="success" sx={{ mb: 2 }}>
-                This ticket has been resolved by an agent. Please confirm if the issue is fixed.
+                This ticket has been resolved by an agent. Please confirm if the
+                issue is fixed or reject if you're not satisfied.
               </Alert>
-              <Button
-                variant="contained"
-                color="success"
-                fullWidth
-                onClick={handleConfirmResolved}
-                disabled={submitting}
-                size="large"
-              >
-                {submitting ? <CircularProgress size={24} /> : 'Confirm Issue is Fixed - Close Ticket'}
-              </Button>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  fullWidth
+                  onClick={handleConfirmResolved}
+                  disabled={submitting}
+                  size="large"
+                >
+                  {submitting ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    "Confirm Issue is Fixed - Close Ticket"
+                  )}
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  onClick={handleRejectResolved}
+                  disabled={submitting}
+                  size="large"
+                >
+                  {submitting ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    "Reject - Not Satisfied"
+                  )}
+                </Button>
+              </Box>
             </Box>
-          ) : ticket.status === 'closed' ? (
+          ) : ticket.status === "closed" ? (
             <Alert severity="success">
               This ticket has been closed. Thank you for your confirmation!
             </Alert>
           ) : (
             <Alert severity="info">
-              Only agents can respond to tickets. If you need to add more information,
-              please create a new ticket.
+              Only agents can respond to tickets. If you need to add more
+              information, please create a new ticket.
             </Alert>
           )}
         </Paper>
@@ -453,4 +545,3 @@ const TicketDetail = () => {
 };
 
 export default TicketDetail;
-

@@ -16,10 +16,11 @@ import {
   IconButton,
   Alert,
   CircularProgress,
+  Divider,
 } from '@mui/material';
 import { Add, Visibility } from '@mui/icons-material';
 import api from '../utils/api';
-import { getUserRole } from '../utils/auth';
+import { getUserRole, getUser } from '../utils/auth';
 
 const Dashboard = () => {
   const [tickets, setTickets] = useState([]);
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const role = getUserRole();
+  const user = getUser();
 
   useEffect(() => {
     fetchTickets();
@@ -57,6 +59,83 @@ const Dashboard = () => {
     return new Date(dateString).toLocaleString();
   };
 
+  const renderTicketTable = (ticketList, showAgent = true) => {
+    if (ticketList.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={showAgent ? 7 : 5} align="center">
+            No tickets found
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return ticketList.map((ticket) => (
+      <TableRow 
+        key={ticket.id}
+        sx={{
+          backgroundColor: ticket.escalated ? 'rgba(255, 152, 0, 0.1)' : 'inherit',
+          borderLeft: ticket.escalated ? '4px solid #ff9800' : 'none',
+        }}
+      >
+        <TableCell>#{ticket.id}</TableCell>
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {ticket.title}
+            {ticket.escalated && (
+              <Chip
+                label="ESCALATED"
+                color="warning"
+                size="small"
+                sx={{ fontWeight: 'bold' }}
+              />
+            )}
+          </Box>
+        </TableCell>
+        <TableCell>
+          <Chip
+            label={ticket.status.replace('_', ' ')}
+            color={getStatusColor(ticket.status)}
+            size="small"
+          />
+        </TableCell>
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              label={ticket.priority.toUpperCase()}
+              color={
+                ticket.priority === 'urgent' ? 'error' :
+                ticket.priority === 'high' ? 'warning' :
+                ticket.priority === 'medium' ? 'info' : 'default'
+              }
+              size="small"
+            />
+            {ticket.escalation_count > 0 && (
+              <Typography variant="caption" color="warning.main">
+                (Escalated {ticket.escalation_count}x)
+              </Typography>
+            )}
+          </Box>
+        </TableCell>
+        {showAgent && (
+          <>
+            <TableCell>{ticket.customer_name || 'N/A'}</TableCell>
+            <TableCell>{ticket.agent_name || 'Unassigned'}</TableCell>
+          </>
+        )}
+        <TableCell>{formatDate(ticket.created_at)}</TableCell>
+        <TableCell>
+          <IconButton
+            size="small"
+            onClick={() => navigate(`/tickets/${ticket.id}`)}
+          >
+            <Visibility />
+          </IconButton>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
   if (loading) {
     return (
       <Container>
@@ -67,8 +146,118 @@ const Dashboard = () => {
     );
   }
 
+  // For agents, organize tickets into sections
+  if (role === 'agent') {
+    const myTickets = tickets.filter(
+      (t) => Number(t.agent_id) === Number(user.id) && t.status !== 'closed'
+    );
+    const unassignedTickets = tickets.filter(
+      (t) => !t.agent_id && t.status !== 'closed'
+    );
+    const otherAgentTickets = tickets.filter(
+      (t) => t.agent_id && Number(t.agent_id) !== Number(user.id) && t.status !== 'closed'
+    );
+    const closedTickets = tickets.filter((t) => t.status === 'closed');
+
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          <Typography variant="h4" component="h1">
+            Tickets
+          </Typography>
+        </Box>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* My Tickets Section */}
+        <Paper elevation={3} sx={{ mb: 3 }}>
+          <Box sx={{ p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText' }}>
+            <Typography variant="h6">My Tickets (In Progress)</Typography>
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Priority</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Created</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {renderTicketTable(myTickets, false)}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+
+        {/* Other Tickets Section */}
+        <Paper elevation={3} sx={{ mb: 3 }}>
+          <Box sx={{ p: 2, backgroundColor: 'grey.300' }}>
+            <Typography variant="h6">Other Tickets</Typography>
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Priority</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Agent</TableCell>
+                  <TableCell>Created</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {renderTicketTable([...unassignedTickets, ...otherAgentTickets], true)}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+
+        {/* Closed Tickets Section */}
+        {closedTickets.length > 0 && (
+          <Paper elevation={3}>
+            <Box sx={{ p: 2, backgroundColor: 'grey.200' }}>
+              <Typography variant="h6">Closed Tickets</Typography>
+            </Box>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Title</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Priority</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Agent</TableCell>
+                    <TableCell>Created</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {renderTicketTable(closedTickets, true)}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        )}
+      </Container>
+    );
+  }
+
+  // For customers and admins, show all tickets in one table
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, mx: 'auto' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4" component="h1">
           Tickets
@@ -105,78 +294,7 @@ const Dashboard = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {tickets.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No tickets found
-                </TableCell>
-              </TableRow>
-            ) : (
-              tickets.map((ticket) => (
-                <TableRow 
-                  key={ticket.id}
-                  sx={{
-                    backgroundColor: ticket.escalated ? 'rgba(255, 152, 0, 0.1)' : 'inherit',
-                    borderLeft: ticket.escalated ? '4px solid #ff9800' : 'none',
-                  }}
-                >
-                  <TableCell>#{ticket.id}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {ticket.title}
-                      {ticket.escalated && (
-                        <Chip
-                          label="ESCALATED"
-                          color="warning"
-                          size="small"
-                          sx={{ fontWeight: 'bold' }}
-                        />
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={ticket.status.replace('_', ' ')}
-                      color={getStatusColor(ticket.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={ticket.priority.toUpperCase()}
-                        color={
-                          ticket.priority === 'urgent' ? 'error' :
-                          ticket.priority === 'high' ? 'warning' :
-                          ticket.priority === 'medium' ? 'info' : 'default'
-                        }
-                        size="small"
-                      />
-                      {ticket.escalation_count > 0 && (
-                        <Typography variant="caption" color="warning.main">
-                          (Escalated {ticket.escalation_count}x)
-                        </Typography>
-                      )}
-                    </Box>
-                  </TableCell>
-                  {role !== 'customer' && (
-                    <TableCell>{ticket.customer_name || 'N/A'}</TableCell>
-                  )}
-                  {role !== 'customer' && (
-                    <TableCell>{ticket.agent_name || 'Unassigned'}</TableCell>
-                  )}
-                  <TableCell>{formatDate(ticket.created_at)}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => navigate(`/tickets/${ticket.id}`)}
-                    >
-                      <Visibility />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            {renderTicketTable(tickets, role !== 'customer')}
           </TableBody>
         </Table>
       </TableContainer>

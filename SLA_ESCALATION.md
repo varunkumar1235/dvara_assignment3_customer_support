@@ -75,3 +75,4 @@ New columns added to `tickets` table:
 - `escalated` (BOOLEAN): Whether the ticket has been escalated
 - `escalation_count` (INTEGER): Number of times the ticket has been escalated
 
+

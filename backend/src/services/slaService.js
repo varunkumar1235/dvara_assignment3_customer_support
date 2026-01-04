@@ -1,16 +1,16 @@
-const { pool } = require('../config/database');
+const { pool } = require("../config/database");
 
 // Priority escalation mapping
 const PRIORITY_LEVELS = {
-  low: 'medium',
-  medium: 'high',
-  high: 'urgent',
-  urgent: 'urgent', // Can't escalate beyond urgent
+  low: "medium",
+  medium: "high",
+  high: "urgent",
+  urgent: "urgent", // Can't escalate beyond urgent
 };
 
 // SLA Time limits (in milliseconds)
-const FIRST_RESPONSE_TIME = 24 * 60 * 60 * 1000; // 24 hours
-const RESOLUTION_TIME = 72 * 60 * 60 * 1000; // 72 hours
+const FIRST_RESPONSE_TIME = 5 * 60 * 1000; // 5 minutes
+const RESOLUTION_TIME = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Check if ticket needs escalation and escalate if needed
@@ -18,56 +18,60 @@ const RESOLUTION_TIME = 72 * 60 * 60 * 1000; // 72 hours
 const checkAndEscalateTicket = async (ticketId) => {
   try {
     const ticketResult = await pool.query(
-      'SELECT * FROM tickets WHERE id = $1',
+      "SELECT * FROM tickets WHERE id = $1",
       [ticketId]
     );
 
     if (ticketResult.rows.length === 0) {
-      return { escalated: false, reason: 'Ticket not found' };
+      return { escalated: false, reason: "Ticket not found" };
     }
 
     const ticket = ticketResult.rows[0];
 
     // Don't escalate closed tickets
-    if (ticket.status === 'closed') {
-      return { escalated: false, reason: 'Ticket is closed' };
+    if (ticket.status === "closed") {
+      return { escalated: false, reason: "Ticket is closed" };
     }
 
     const now = new Date();
-    
+
     // If ticket was escalated, use updated_at as the new starting point for SLA
     // Otherwise use created_at
-    const slaStartTime = ticket.escalated && ticket.updated_at 
-      ? new Date(ticket.updated_at) 
-      : new Date(ticket.created_at);
-    
-    const firstResponseAt = ticket.first_response_at ? new Date(ticket.first_response_at) : null;
+    const slaStartTime =
+      ticket.escalated && ticket.updated_at
+        ? new Date(ticket.updated_at)
+        : new Date(ticket.created_at);
+
+    const firstResponseAt = ticket.first_response_at
+      ? new Date(ticket.first_response_at)
+      : null;
 
     let needsEscalation = false;
-    let escalationReason = '';
+    let escalationReason = "";
 
-    // Check First Response SLA (24 hours)
+    // Check First Response SLA (5 minutes)
     // If ticket was escalated, check from escalation time
     if (!firstResponseAt) {
       // No first response yet - check from SLA start time
       const timeSinceStart = now - slaStartTime;
       if (timeSinceStart > FIRST_RESPONSE_TIME) {
         needsEscalation = true;
-        escalationReason = 'First response not provided within 24 hours';
+        escalationReason = "First response not provided within 5 minutes";
       }
     } else {
-      // Check Resolution SLA (72 hours after first response)
+      // Check Resolution SLA (15 minutes after first response)
       const timeSinceFirstResponse = now - firstResponseAt;
-      if (ticket.status !== 'resolved' && ticket.status !== 'closed') {
+      if (ticket.status !== "resolved" && ticket.status !== "closed") {
         if (timeSinceFirstResponse > RESOLUTION_TIME) {
           needsEscalation = true;
-          escalationReason = 'Resolution not provided within 72 hours of first response';
+          escalationReason =
+            "Resolution not provided within 15 minutes of first response";
         }
       }
     }
 
     if (!needsEscalation) {
-      return { escalated: false, reason: 'SLA not breached' };
+      return { escalated: false, reason: "SLA not breached" };
     }
 
     // Perform escalation
@@ -76,7 +80,7 @@ const checkAndEscalateTicket = async (ticketId) => {
 
     // Reset agent assignment and timers
     const newSlaDeadline = new Date();
-    newSlaDeadline.setHours(newSlaDeadline.getHours() + 24);
+    newSlaDeadline.setMinutes(newSlaDeadline.getMinutes() + 5);
 
     await pool.query(
       `UPDATE tickets 
@@ -100,7 +104,7 @@ const checkAndEscalateTicket = async (ticketId) => {
       escalationCount,
     };
   } catch (error) {
-    console.error('Error in SLA escalation:', error);
+    console.error("Error in SLA escalation:", error);
     throw error;
   }
 };
@@ -129,7 +133,7 @@ const checkAllTicketsForSLA = async () => {
 
     return escalations;
   } catch (error) {
-    console.error('Error checking all tickets for SLA:', error);
+    console.error("Error checking all tickets for SLA:", error);
     throw error;
   }
 };
@@ -148,4 +152,3 @@ module.exports = {
   FIRST_RESPONSE_TIME,
   RESOLUTION_TIME,
 };
-
