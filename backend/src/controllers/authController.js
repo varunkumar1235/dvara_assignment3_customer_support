@@ -13,10 +13,27 @@ const register = async (req, res, next) => {
       return res.status(400).json({ error: 'Username, email, and password are required' });
     }
 
-    // Check if user exists
+    // Basic validation
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedUsername.length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters long' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return res.status(400).json({ error: 'Please provide a valid email address' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    // Check if user exists by email OR username
     const existingUser = await pool.query(
-      'SELECT id FROM users WHERE email = $1 OR username = $1',
-      [email]
+      'SELECT id FROM users WHERE email = $1 OR username = $2',
+      [trimmedEmail, trimmedUsername]
     );
 
     if (existingUser.rows.length > 0) {
@@ -29,7 +46,7 @@ const register = async (req, res, next) => {
     // Create user
     const result = await pool.query(
       'INSERT INTO users (username, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role',
-      [username, email, hashedPassword, allowedRole]
+      [trimmedUsername, trimmedEmail, hashedPassword, allowedRole]
     );
 
     const user = result.rows[0];

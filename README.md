@@ -1,172 +1,169 @@
 # Customer Support Ticketing System
 
-A full-stack helpdesk system with role-based access control, ticket management, comment threads, SLA tracking, and file uploads.
+A full-stack helpdesk system with role-based access control, SLA-aware ticket lifecycle, comments, and file uploads.  
+Frontend is a modern React + MUI dashboard; backend is Node/Express with PostgreSQL and JWT auth.
 
 ## Features
 
-- **Role-Based Access Control**: Admin, Support Agent, and Customer roles
-- **Ticket Management**: Create, view, update, and close tickets
-- **Comment Threads**: Agents can respond to tickets with threaded comments
-- **SLA Timer**: Basic SLA tracking with 24-hour deadline
-- **File Uploads**: Attach files to tickets
-- **Status Lifecycle**: Open → In Progress → Resolved → Closed
+- **Role-Based Access Control**: Admin, Agent, and Customer roles.
+- **Ticket Lifecycle**: Open → In Progress → Resolved → Closed with SLA timers and escalation.
+- **Comments & Attachments**: Agents can comment on tickets and attach files.
+- **Auth & Security Basics**:
+  - Unique **username** and **email** for every user.
+  - Passwords are **hashed with bcrypt** and must be **at least 8 characters**.
+  - Email format validation and basic username length validation.
 
 ## Tech Stack
 
-### Backend
-- Node.js + Express.js
-- PostgreSQL
-- JWT Authentication
-- Multer for file uploads
+- **Backend**: Node.js, Express, PostgreSQL, JWT, Multer, Jest + Supertest.
+- **Frontend**: React (Vite), Material UI (MUI), React Router, Axios.
 
-### Frontend
-- React + Vite
-- Material-UI (MUI)
-- React Router DOM
-- Axios
-- JWT Decode
+## Environment Configuration
 
-## Setup Instructions
+Create a `.env` file in the **backend** folder (copy from `.env.example` if present) with at least:
 
-### Prerequisites
-- Node.js (v16+)
-- PostgreSQL (running on port 5432)
-- Database: `ticketing_db` with password: `kumar`
-
-### Backend Setup
-
-1. Navigate to backend directory:
-```bash
-cd backend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env` file (optional, defaults are set):
 ```env
 PORT=5000
-JWT_SECRET=your-secret-key-change-this-in-production
+JWT_SECRET=change-me-in-production
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=ticketing_db
+DB_USER=postgres
+DB_PASSWORD=your_postgres_password_here
 ```
 
-4. Start the server:
+For the **frontend** (Vite), you can optionally create `frontend/.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+If `VITE_API_BASE_URL` is not set, the frontend defaults to `http://localhost:5000/api`.
+
+## Backend Setup
+
 ```bash
-npm run dev
+cd backend
+npm install
+npm run dev   # runs Express on http://localhost:5000
 ```
 
-The backend will run on `http://localhost:5000`
+The database schema (users, tickets, comments, files, etc.) is created automatically on server startup via `initDatabase()`.
 
-### Frontend Setup
+## Frontend Setup
 
-1. Navigate to frontend directory:
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
 npm install
+npm run dev   # Vite dev server on http://localhost:5173
 ```
 
-3. Start the development server:
-```bash
-npm run dev
-```
+The frontend talks to the backend via `VITE_API_BASE_URL` (or `http://localhost:5000/api` by default).
 
-The frontend will run on `http://localhost:5173`
+## Auth Rules & Validation
 
-## Database Schema
+- **Registration (`POST /api/auth/register`)**
+  - Required fields: `username`, `email`, `password`.
+  - `username`:
+    - Trimmed and must be **at least 3 characters**.
+    - Must be unique.
+  - `email`:
+    - Trimmed, lowercased, must match a basic email pattern.
+    - Must be unique.
+  - `password`:
+    - Must be **at least 8 characters**.
+    - Stored only as a bcrypt hash.
+  - `role` is forced to `customer` when registering via the public endpoint.
 
-The database schema is automatically created on server startup. It includes:
+- **Login (`POST /api/auth/login`)**
+  - Requires `email` and `password`.
+  - Returns a JWT containing `id`, `username`, and `role`.
 
-- **users**: User accounts with roles (admin, agent, customer)
-- **tickets**: Support tickets with status, priority, and SLA tracking
-- **comments**: Threaded comments on tickets
-- **files**: File attachments for tickets and comments
+## API Overview
 
-## API Endpoints
+- **Auth**
+  - `POST /api/auth/register` – Register a new customer.
+  - `POST /api/auth/login` – Login.
+  - `GET /api/auth/me` – Get current user (requires JWT).
 
-### Authentication
-- `POST /api/auth/register` - Register new user (customer only)
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
+- **Tickets**
+  - `POST /api/tickets` – Create ticket (customer).
+  - `GET /api/tickets` – List tickets (filtered by role).
+  - `GET /api/tickets/:id` – Get ticket details.
+  - `PATCH /api/tickets/:id/status` – Update status (agent/admin).
+  - `PATCH /api/tickets/:id/assign` – Assign agent (agent/admin).
 
-### Tickets
-- `POST /api/tickets` - Create ticket (customer)
-- `GET /api/tickets` - List tickets (filtered by role)
-- `GET /api/tickets/:id` - Get ticket details
-- `PATCH /api/tickets/:id/status` - Update status (agent/admin)
-- `PATCH /api/tickets/:id/assign` - Assign agent (agent/admin)
+- **Comments**
+  - `POST /api/comments` – Add comment (agent/admin).
 
-### Comments
-- `POST /api/comments` - Add comment (agent/admin)
-- `GET /api/comments/ticket/:ticket_id` - Get ticket comments
+- **Files**
+  - `POST /api/files/upload` – Upload file.
+  - `GET /api/files/:id` – Download file.
 
-### Files
-- `POST /api/files/upload` - Upload file
-- `GET /api/files/:id` - Download file
-- `DELETE /api/files/:id` - Delete file
+## Role Permissions (High Level)
 
-## Role Permissions
+- **Customer**
+  - Register, login.
+  - Create tickets and view **own** tickets.
+  - Confirm or reject resolutions via the ticket detail page.
 
-### Customer
-- Create tickets
-- View own tickets
-- Cannot comment or update status
+- **Agent**
+  - View all tickets.
+  - Update ticket status, add comments, and handle attachments.
 
-### Support Agent
-- View all tickets
-- Respond to tickets (add comments)
-- Update ticket status
-- Assign tickets
-- Close tickets
-
-### Admin
-- All agent permissions
-- Full system access
+- **Admin**
+  - All agent permissions.
+  - Access agent statistics and all tickets.
 
 ## Testing
 
-Run backend tests:
+Backend tests use **Jest + Supertest** and live under `backend/src/tests`.
+
+- Run **all tests**:
+
 ```bash
 cd backend
 npm test
 ```
 
-Tests include:
-- Ticket lifecycle tests
-- Permission tests
+- Run only the **Ticket Lifecycle Tests**:
 
-## Project Structure
-
+```bash
+cd backend
+npx jest src/tests/ticket.test.js
 ```
-.
-├── backend/
-│   ├── src/
-│   │   ├── config/        # Database configuration
-│   │   ├── controllers/   # Request handlers
-│   │   ├── middlewares/   # Auth and error handling
-│   │   ├── routes/        # API routes
-│   │   ├── services/      # Business logic
-│   │   ├── tests/         # Test files
-│   │   └── app.js         # Express app
-│   └── uploads/           # File uploads directory
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   ├── pages/         # Page components
-│   │   ├── utils/         # Utilities (API, auth)
-│   │   ├── App.jsx        # Main app component
-│   │   └── main.jsx       # Entry point
-│   └── public/            # Static assets
-└── README.md
+
+- Run only the **Permission Tests**:
+
+```bash
+cd backend
+npx jest src/tests/permissions.test.js
+```
+
+Both test suites create their own users/tickets in the database and clean them up afterwards.
+
+## Project Structure (Simplified)
+
+```text
+backend/
+  src/
+    config/        # Database (Pool + schema init)
+    controllers/   # Auth, tickets, comments, files
+    middlewares/   # Auth, error handler
+    routes/        # /api/auth, /api/tickets, etc.
+    tests/         # ticket.test.js, permissions.test.js
+    app.js         # Express app + initDatabase()
+
+frontend/
+  src/
+    components/    # Layout, shared UI
+    pages/         # Login, Register, Dashboard, TicketDetail, CreateTicket
+    utils/         # api client, auth helpers
 ```
 
 ## Notes
 
-- Default JWT secret is `your-secret-key` (change in production)
-- File uploads are stored in `backend/uploads/`
-- SLA deadline is set to 24 hours from ticket creation
-- All timestamps are in UTC
+- Database connection is now **fully configurable via env vars** (no hardcoded passwords).
+- JWT secret should always be overridden in `.env` for real deployments.
+- File uploads are stored under `backend/uploads/` and served at `/uploads`.

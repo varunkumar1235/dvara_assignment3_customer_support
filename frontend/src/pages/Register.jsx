@@ -9,7 +9,10 @@ import {
   Box,
   Alert,
   CircularProgress,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import api from "../utils/api";
 import { setAuth } from "../utils/auth";
 
@@ -20,6 +23,10 @@ const Register = () => {
     password: "",
     confirmPassword: "",
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -38,8 +45,8 @@ const Register = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -68,7 +75,6 @@ const Register = () => {
         bgcolor: "background.default",
       }}
     >
-      {/* Left register panel - ~40% width on desktop */}
       <Box
         sx={{
           width: { xs: "100%", md: "40%" },
@@ -79,22 +85,24 @@ const Register = () => {
           py: { xs: 6, md: 0 },
           bgcolor: "background.paper",
           boxShadow: { md: 3 },
-          zIndex: 1,
         }}
       >
         <Container maxWidth="sm" disableGutters>
           <Paper elevation={0} sx={{ p: { xs: 3, md: 4 } }}>
-            <Typography variant="h4" component="h1" gutterBottom align="left">
+            <Typography variant="h4" component="h1" gutterBottom>
               Create your account
             </Typography>
+
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Set up access to your support workspace in a few quick steps.
             </Typography>
+
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
+
             <form onSubmit={handleSubmit}>
               <TextField
                 fullWidth
@@ -105,6 +113,7 @@ const Register = () => {
                 margin="normal"
                 required
               />
+
               <TextField
                 fullWidth
                 label="Email"
@@ -115,26 +124,61 @@ const Register = () => {
                 margin="normal"
                 required
               />
+
+              {/* Password */}
               <TextField
                 fullWidth
                 label="Password"
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={handleChange}
                 margin="normal"
                 required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
+
+              {/* Confirm Password */}
               <TextField
                 fullWidth
                 label="Confirm Password"
                 name="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 margin="normal"
                 required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        edge="end"
+                      >
+                        {showConfirmPassword ? (
+                          <VisibilityOff />
+                        ) : (
+                          <Visibility />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
+
               <Button
                 type="submit"
                 fullWidth
@@ -144,6 +188,7 @@ const Register = () => {
               >
                 {loading ? <CircularProgress size={24} /> : "Register"}
               </Button>
+
               <Typography align="center" variant="body2">
                 Already have an account? <Link to="/login">Login</Link>
               </Typography>
@@ -152,17 +197,15 @@ const Register = () => {
         </Container>
       </Box>
 
-      {/* Right visual panel - place your image here */}
       <Box
         sx={{
           display: { xs: "none", md: "block" },
           flex: 1,
           minHeight: "100vh",
           backgroundColor: "primary.main",
+          backgroundImage: "url('/images/auth-bg.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          backgroundImage: "url('/images/auth-bg.jpg')",
         }}
       />
     </Box>
