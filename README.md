@@ -1,6 +1,7 @@
 # Customer Support System
 
 ## 📚 Documentation
+
 - **[SLA & Escalation Policy](./SLA_ESCALATION.md)**: Details on response times, resolution limits, and the auto-escalation process.
 - **[Status Explanations](./STATUS_EXPLANATION.md)**: Breakdown of ticket statuses and what they mean.
 
@@ -42,13 +43,15 @@ Frontend is a modern React + MUI dashboard; backend is Node/Express with Postgre
    Create a `.env` file in `backend/` as described in the [Environment Configuration](#environment-configuration) section.
 
 4. **Start the Server**:
+
    ```bash
    npm run dev
    ```
+
    Server runs on `http://localhost:5000` by default.
 
 5. **Seed the Database**:
-   Populate the database with sample users (Admin, Agent, Customer) and tickets.
+   In another terminal, navigate to backend and populate the database with sample users (Admin, Agent, Customer) and tickets.
 
    ```bash
    npm run seed
@@ -130,56 +133,62 @@ You can also create users manually using the command line:
 ## Database Schema
 
 ### `users`
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique user ID |
-| `username` | VARCHAR(255) | UNIQUE, NOT NULL | User's display name |
-| `email` | VARCHAR(255) | UNIQUE, NOT NULL | User's email address |
-| `password` | VARCHAR(255) | NOT NULL | Hashed password |
-| `role` | VARCHAR(50) | CHECK IN ('admin', 'agent', 'customer') | User's role |
-| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Account creation time |
+
+| Column       | Type         | Constraints                             | Description           |
+| ------------ | ------------ | --------------------------------------- | --------------------- |
+| `id`         | SERIAL       | PRIMARY KEY                             | Unique user ID        |
+| `username`   | VARCHAR(255) | UNIQUE, NOT NULL                        | User's display name   |
+| `email`      | VARCHAR(255) | UNIQUE, NOT NULL                        | User's email address  |
+| `password`   | VARCHAR(255) | NOT NULL                                | Hashed password       |
+| `role`       | VARCHAR(50)  | CHECK IN ('admin', 'agent', 'customer') | User's role           |
+| `created_at` | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP               | Account creation time |
 
 ### `tickets`
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique ticket ID |
-| `title` | VARCHAR(500) | NOT NULL | Ticket title |
-| `description` | TEXT | NOT NULL | Detailed description |
-| `status` | VARCHAR(50) | DEFAULT 'open' | Current status (open, in_progress, resolved, closed) |
-| `priority` | VARCHAR(50) | DEFAULT 'medium' | Priority level (low, medium, high, urgent) |
-| `customer_id` | INTEGER | NOT NULL, REF users(id) | The customer who owns the ticket |
-| `agent_id` | INTEGER | REF users(id) | The assigned support agent |
-| `escalated` | BOOLEAN | DEFAULT FALSE | Whether ticket is escalated |
-| `escalation_count`| INTEGER | DEFAULT 0 | Number of times escalated |
-| `sla_deadline` | TIMESTAMP | | Deadline for resolution |
+
+| Column             | Type         | Constraints             | Description                                          |
+| ------------------ | ------------ | ----------------------- | ---------------------------------------------------- |
+| `id`               | SERIAL       | PRIMARY KEY             | Unique ticket ID                                     |
+| `title`            | VARCHAR(500) | NOT NULL                | Ticket title                                         |
+| `description`      | TEXT         | NOT NULL                | Detailed description                                 |
+| `status`           | VARCHAR(50)  | DEFAULT 'open'          | Current status (open, in_progress, resolved, closed) |
+| `priority`         | VARCHAR(50)  | DEFAULT 'medium'        | Priority level (low, medium, high, urgent)           |
+| `customer_id`      | INTEGER      | NOT NULL, REF users(id) | The customer who owns the ticket                     |
+| `agent_id`         | INTEGER      | REF users(id)           | The assigned support agent                           |
+| `escalated`        | BOOLEAN      | DEFAULT FALSE           | Whether ticket is escalated                          |
+| `escalation_count` | INTEGER      | DEFAULT 0               | Number of times escalated                            |
+| `sla_deadline`     | TIMESTAMP    |                         | Deadline for resolution                              |
 
 ### `comments`
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique comment ID |
-| `ticket_id` | INTEGER | NOT NULL, REF tickets(id) | Associated ticket |
-| `user_id` | INTEGER | NOT NULL, REF users(id) | Author of the comment |
-| `content` | TEXT | NOT NULL | Comment text |
+
+| Column      | Type    | Constraints               | Description           |
+| ----------- | ------- | ------------------------- | --------------------- |
+| `id`        | SERIAL  | PRIMARY KEY               | Unique comment ID     |
+| `ticket_id` | INTEGER | NOT NULL, REF tickets(id) | Associated ticket     |
+| `user_id`   | INTEGER | NOT NULL, REF users(id)   | Author of the comment |
+| `content`   | TEXT    | NOT NULL                  | Comment text          |
 
 ### `files`
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique file ID |
-| `ticket_id` | INTEGER | REF tickets(id) | Associated ticket |
-| `filename` | VARCHAR(255)| NOT NULL | Stored filename |
-| `file_path` | VARCHAR(500)| NOT NULL | Path on disk |
+
+| Column      | Type         | Constraints     | Description       |
+| ----------- | ------------ | --------------- | ----------------- |
+| `id`        | SERIAL       | PRIMARY KEY     | Unique file ID    |
+| `ticket_id` | INTEGER      | REF tickets(id) | Associated ticket |
+| `filename`  | VARCHAR(255) | NOT NULL        | Stored filename   |
+| `file_path` | VARCHAR(500) | NOT NULL        | Path on disk      |
 
 ### Seed Script Summary
 
 When you run `npm run seed`, the following data is automatically populated:
 
 **1. Users**
+
 - **Admin**: `admin:admin@example.com`
 - **Agent**: `agent:agent@example.com`
 - **Customer**: `customer:customer@example.com`
-*Password for all is `password123`*
+  _Password for all is `password123`_
 
 **2. Tickets** (Created for `customer@example.com`)
+
 - **Login Issue**: High Priority, Open status.
 - **Feature Request**: Low Priority, Open status.
 
