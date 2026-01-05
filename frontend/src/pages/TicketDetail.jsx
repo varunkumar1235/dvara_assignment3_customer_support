@@ -277,7 +277,7 @@ const TicketDetail = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, mx: "auto" }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4, mx: "auto" }}>
       <Button
         startIcon={<ArrowBack />}
         onClick={() => navigate("/")}
@@ -292,310 +292,345 @@ const TicketDetail = () => {
         </Alert>
       )}
 
-      <Paper
-        elevation={3}
+      <Box
         sx={{
-          p: 3,
-          mb: 3,
-          borderLeft: ticket.escalated ? "6px solid #ff9800" : "none",
-          backgroundColor: ticket.escalated
-            ? "rgba(255, 152, 0, 0.05)"
-            : "inherit",
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "minmax(0, 2fr) minmax(0, 1fr)",
+          },
+          gap: 3,
+          alignItems: "flex-start",
         }}
       >
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Box>
-            <Typography variant="h4">Ticket #{ticket.id}</Typography>
-            {ticket.escalated && (
-              <Chip
-                label="ESCALATED"
-                color="warning"
-                sx={{ mt: 1, fontWeight: "bold" }}
-              />
-            )}
-          </Box>
-          <Box
+        {/* Left: main ticket info and comments */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <Paper
+            elevation={3}
             sx={{
-              display: "flex",
-              gap: 2,
-              alignItems: "center",
-              flexWrap: "wrap",
+              p: 3,
+              borderLeft: ticket.escalated ? "6px solid #ff9800" : "none",
+              backgroundColor: ticket.escalated
+                ? "rgba(255, 152, 0, 0.05)"
+                : "inherit",
             }}
           >
-            {slaTime && (
-              <Chip
-                label={slaTime.text}
-                color={slaTime.overdue ? "error" : "warning"}
-                size="small"
-              />
-            )}
-            <Chip
-              label={ticket.status.replace("_", " ")}
-              color={ticket.status === "closed" ? "default" : "primary"}
-            />
-            <Chip
-              label={ticket.priority.toUpperCase()}
-              color={
-                ticket.priority === "urgent"
-                  ? "error"
-                  : ticket.priority === "high"
-                  ? "warning"
-                  : ticket.priority === "medium"
-                  ? "info"
-                  : "default"
-              }
-              size="small"
-            />
-          </Box>
-        </Box>
-
-        {ticket.escalated && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            This ticket has been escalated due to SLA breach.
-            {ticket.escalation_count > 1 &&
-              ` (Escalated ${ticket.escalation_count} times)`}
-            Priority has been increased and the ticket has been reset. A new
-            agent needs to be assigned.
-          </Alert>
-        )}
-
-        <Typography variant="h6" gutterBottom>
-          {ticket.title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Priority: {ticket.priority} | Created: {formatDate(ticket.created_at)}
-        </Typography>
-        {ticket.customer_name && (
-          <Typography variant="body2" color="text.secondary">
-            Customer: {ticket.customer_name}
-          </Typography>
-        )}
-        {ticket.agent_name && (
-          <Typography variant="body2" color="text.secondary">
-            Agent: {ticket.agent_name}
-          </Typography>
-        )}
-
-        <Divider sx={{ my: 2 }} />
-
-        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-          {ticket.description}
-        </Typography>
-
-        {role === "agent" && ticket.status !== "closed" && (
-          <Box sx={{ mt: 3 }}>
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={status}
-                label="Status"
-                onChange={(e) => handleStatusChange(e.target.value)}
-              >
-                <MenuItem value="open">Open</MenuItem>
-                <MenuItem value="in_progress">In Progress</MenuItem>
-                <MenuItem value="resolved">Resolved</MenuItem>
-                <MenuItem value="closed">Closed</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        )}
-        {role === "agent" && ticket.status === "closed" && (
-          <Box sx={{ mt: 3 }}>
-            <Alert severity="info">
-              This ticket is closed and cannot be modified.
-            </Alert>
-          </Box>
-        )}
-      </Paper>
-
-      {files.length > 0 && (
-        <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Attachments
-          </Typography>
-          <List>
-            {files.map((file) => (
-              <ListItem
-                key={file.id}
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    onClick={() =>
-                      handleFileDownload(file.id, file.original_name)
-                    }
-                  >
-                    <Download />
-                  </IconButton>
-                }
-              >
-                <ListItemText
-                  primary={file.original_name}
-                  secondary={`${(file.file_size / 1024).toFixed(2)} KB`}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
-      )}
-
-      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Comments
-        </Typography>
-        <Divider sx={{ mb: 2 }} />
-        {comments.length === 0 ? (
-          <Typography color="text.secondary">No comments yet</Typography>
-        ) : (
-          <Box>
-            {comments.map((comment) => (
-              <Card key={comment.id} sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      mb: 1,
-                    }}
-                  >
-                    <Typography variant="subtitle2" fontWeight="bold">
-                      {comment.username} ({comment.role})
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDate(comment.created_at)}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2">{comment.content}</Typography>
-                </CardContent>
-              </Card>
-            ))}
-          </Box>
-        )}
-      </Paper>
-
-      {role === "agent" && ticket.status !== "closed" && (
-        <Paper elevation={3} sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Add Comment
-          </Typography>
-          <form onSubmit={handleCommentSubmit}>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..."
-              margin="normal"
-            />
-            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<AttachFile />}
-              >
-                Attach File
-                <input
-                  type="file"
-                  hidden
-                  onChange={(e) => setSelectedFile(e.target.files[0])}
-                />
-              </Button>
-              {selectedFile && (
-                <Typography variant="body2" sx={{ alignSelf: "center" }}>
-                  {selectedFile.name}
-                </Typography>
-              )}
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={<Send />}
-                disabled={submitting || !commentText.trim()}
-              >
-                {submitting ? <CircularProgress size={24} /> : "Send"}
-              </Button>
-            </Box>
-          </form>
-        </Paper>
-      )}
-      {role === "agent" && ticket.status === "closed" && (
-        <Paper elevation={3} sx={{ p: 3 }}>
-          <Alert severity="info">
-            This ticket is closed. Comments cannot be added to closed tickets.
-          </Alert>
-        </Paper>
-      )}
-
-      {role === "customer" && (
-        <Paper elevation={3} sx={{ p: 3 }}>
-          {ticket.status === "resolved" ? (
-            <Box>
-              <Alert severity="success" sx={{ mb: 2 }}>
-                This ticket has been resolved by an agent. Please confirm if the
-                issue is fixed or reject if you're not satisfied.
-                {countdown && (
-                  <Box sx={{ mt: 1 }}>
-                    <Chip
-                      label={countdown.text}
-                      color={countdown.expired ? "error" : "warning"}
-                      size="small"
-                      sx={{ fontWeight: "bold" }}
-                    />
-                    {countdown.expired && (
-                      <Typography
-                        variant="caption"
-                        color="error"
-                        sx={{ display: "block", mt: 0.5 }}
-                      >
-                        The ticket will be automatically closed. If you need to
-                        reopen this issue, please create a new ticket.
-                      </Typography>
-                    )}
-                  </Box>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
+            >
+              <Box>
+                <Typography variant="h4">Ticket #{ticket.id}</Typography>
+                {ticket.escalated && (
+                  <Chip
+                    label="ESCALATED"
+                    color="warning"
+                    sx={{ mt: 1, fontWeight: "bold" }}
+                  />
                 )}
-              </Alert>
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <Button
-                  variant="contained"
-                  color="success"
-                  fullWidth
-                  onClick={handleConfirmResolved}
-                  disabled={submitting || countdown?.expired}
-                  size="large"
-                >
-                  {submitting ? (
-                    <CircularProgress size={24} />
-                  ) : (
-                    "Confirm Issue is Fixed - Close Ticket"
-                  )}
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  fullWidth
-                  onClick={handleRejectResolved}
-                  disabled={submitting || countdown?.expired}
-                  size="large"
-                >
-                  {submitting ? (
-                    <CircularProgress size={24} />
-                  ) : (
-                    "Reject - Not Satisfied"
-                  )}
-                </Button>
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {slaTime && (
+                  <Chip
+                    label={slaTime.text}
+                    color={slaTime.overdue ? "error" : "warning"}
+                    size="small"
+                  />
+                )}
+                <Chip
+                  label={ticket.status.replace("_", " ")}
+                  color={ticket.status === "closed" ? "default" : "primary"}
+                />
+                <Chip
+                  label={ticket.priority.toUpperCase()}
+                  color={
+                    ticket.priority === "urgent"
+                      ? "error"
+                      : ticket.priority === "high"
+                      ? "warning"
+                      : ticket.priority === "medium"
+                      ? "info"
+                      : "default"
+                  }
+                  size="small"
+                />
               </Box>
             </Box>
-          ) : ticket.status === "closed" ? (
-            <Alert severity="success">
-              This ticket has been closed. Thank you for your confirmation!
-            </Alert>
-          ) : (
-            <Alert severity="info">
-              Only agents can respond to tickets. If you need to add more
-              information, please create a new ticket.
-            </Alert>
+
+            {ticket.escalated && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                This ticket has been escalated due to SLA breach.
+                {ticket.escalation_count > 1 &&
+                  ` (Escalated ${ticket.escalation_count} times)`}
+                Priority has been increased and the ticket has been reset. A new
+                agent needs to be assigned.
+              </Alert>
+            )}
+
+            <Typography variant="h6" gutterBottom>
+              {ticket.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Priority: {ticket.priority} | Created:{" "}
+              {formatDate(ticket.created_at)}
+            </Typography>
+            {ticket.customer_name && (
+              <Typography variant="body2" color="text.secondary">
+                Customer: {ticket.customer_name}
+              </Typography>
+            )}
+            {ticket.agent_name && (
+              <Typography variant="body2" color="text.secondary">
+                Agent: {ticket.agent_name}
+              </Typography>
+            )}
+
+            <Divider sx={{ my: 2 }} />
+
+            <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+              {ticket.description}
+            </Typography>
+          </Paper>
+
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Comments
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            {comments.length === 0 ? (
+              <Typography color="text.secondary">No comments yet</Typography>
+            ) : (
+              <Box>
+                {comments.map((comment) => (
+                  <Card key={comment.id} sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          mb: 1,
+                        }}
+                      >
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {comment.username} ({comment.role})
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(comment.created_at)}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2">{comment.content}</Typography>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            )}
+          </Paper>
+        </Box>
+
+        {/* Right: status, attachments, actions */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {(role === "agent" || role === "customer") && (
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Status & Controls
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              {role === "agent" && ticket.status !== "closed" && (
+                <Box sx={{ mb: 2 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={status}
+                      label="Status"
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                    >
+                      <MenuItem value="open">Open</MenuItem>
+                      <MenuItem value="in_progress">In Progress</MenuItem>
+                      <MenuItem value="resolved">Resolved</MenuItem>
+                      <MenuItem value="closed">Closed</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              )}
+              {role === "agent" && ticket.status === "closed" && (
+                <Alert severity="info">
+                  This ticket is closed and cannot be modified.
+                </Alert>
+              )}
+
+              {role === "customer" && (
+                <Box sx={{ mt: 1 }}>
+                  {ticket.status === "resolved" ? (
+                    <Box>
+                      <Alert severity="success" sx={{ mb: 2 }}>
+                        This ticket has been resolved by an agent. Please
+                        confirm if the issue is fixed or reject if you're not
+                        satisfied.
+                        {countdown && (
+                          <Box sx={{ mt: 1 }}>
+                            <Chip
+                              label={countdown.text}
+                              color={countdown.expired ? "error" : "warning"}
+                              size="small"
+                              sx={{ fontWeight: "bold" }}
+                            />
+                            {countdown.expired && (
+                              <Typography
+                                variant="caption"
+                                color="error"
+                                sx={{ display: "block", mt: 0.5 }}
+                              >
+                                The ticket will be automatically closed. If you
+                                need to reopen this issue, please create a new
+                                ticket.
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Alert>
+                      <Box sx={{ display: "flex", gap: 2 }}>
+                        <Button
+                          variant="contained"
+                          color="success"
+                          fullWidth
+                          onClick={handleConfirmResolved}
+                          disabled={submitting || countdown?.expired}
+                          size="large"
+                        >
+                          {submitting ? (
+                            <CircularProgress size={24} />
+                          ) : (
+                            "Confirm Issue is Fixed - Close Ticket"
+                          )}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          fullWidth
+                          onClick={handleRejectResolved}
+                          disabled={submitting || countdown?.expired}
+                          size="large"
+                        >
+                          {submitting ? (
+                            <CircularProgress size={24} />
+                          ) : (
+                            "Reject - Not Satisfied"
+                          )}
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : ticket.status === "closed" ? (
+                    <Alert severity="success">
+                      This ticket has been closed. Thank you for your
+                      confirmation!
+                    </Alert>
+                  ) : (
+                    <Alert severity="info">
+                      Only agents can respond to tickets. If you need to add
+                      more information, please create a new ticket.
+                    </Alert>
+                  )}
+                </Box>
+              )}
+            </Paper>
           )}
-        </Paper>
-      )}
+
+          {files.length > 0 && (
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Attachments
+              </Typography>
+              <Divider sx={{ mb: 1.5 }} />
+              <List>
+                {files.map((file) => (
+                  <ListItem
+                    key={file.id}
+                    secondaryAction={
+                      <IconButton
+                        edge="end"
+                        onClick={() =>
+                          handleFileDownload(file.id, file.original_name)
+                        }
+                      >
+                        <Download />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={file.original_name}
+                      secondary={`${(file.file_size / 1024).toFixed(2)} KB`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          )}
+
+          {role === "agent" && (
+            <Paper elevation={3} sx={{ p: 3 }}>
+              {ticket.status !== "closed" ? (
+                <>
+                  <Typography variant="h6" gutterBottom>
+                    Add Comment
+                  </Typography>
+                  <form onSubmit={handleCommentSubmit}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Write a comment..."
+                      margin="normal"
+                    />
+                    <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        startIcon={<AttachFile />}
+                      >
+                        Attach File
+                        <input
+                          type="file"
+                          hidden
+                          onChange={(e) => setSelectedFile(e.target.files[0])}
+                        />
+                      </Button>
+                      {selectedFile && (
+                        <Typography
+                          variant="body2"
+                          sx={{ alignSelf: "center" }}
+                        >
+                          {selectedFile.name}
+                        </Typography>
+                      )}
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        startIcon={<Send />}
+                        disabled={submitting || !commentText.trim()}
+                      >
+                        {submitting ? <CircularProgress size={24} /> : "Send"}
+                      </Button>
+                    </Box>
+                  </form>
+                </>
+              ) : (
+                <Alert severity="info">
+                  This ticket is closed. Comments cannot be added to closed
+                  tickets.
+                </Alert>
+              )}
+            </Paper>
+          )}
+        </Box>
+      </Box>
     </Container>
   );
 };

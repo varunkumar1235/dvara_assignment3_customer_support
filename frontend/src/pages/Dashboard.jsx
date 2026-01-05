@@ -50,6 +50,22 @@ const Dashboard = () => {
     }
   };
 
+  const ticketCounts = tickets.reduce(
+    (acc, t) => {
+      acc.total += 1;
+      acc.byStatus[t.status] = (acc.byStatus[t.status] || 0) + 1;
+      acc.byPriority[t.priority] = (acc.byPriority[t.priority] || 0) + 1;
+      if (t.escalated) acc.escalated += 1;
+      return acc;
+    },
+    {
+      total: 0,
+      byStatus: {},
+      byPriority: {},
+      escalated: 0,
+    }
+  );
+
   const fetchAgentStatistics = async () => {
     try {
       setStatsLoading(true);
@@ -223,242 +239,455 @@ const Dashboard = () => {
     const closedTickets = tickets.filter((t) => t.status === "closed");
 
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Tickets
-          </Typography>
-        </Box>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 3,
+            alignItems: "flex-start",
+          }}
+        >
+          {/* Main tables column (~60%) */}
+          <Box sx={{ flex: 3 }}>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}
+            ></Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-        {/* My Tickets Section */}
-        <Paper elevation={3} sx={{ mb: 3 }}>
+            {/* My Tickets Section */}
+            <Paper elevation={3} sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  p: 2,
+                  backgroundColor: "primary.light",
+                  color: "primary.contrastText",
+                }}
+              >
+                <Typography variant="h6">My Tickets (In Progress)</Typography>
+              </Box>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Title</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Priority</TableCell>
+                      <TableCell>Created</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>{renderTicketTable(myTickets, false)}</TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+
+            {/* Other Tickets Section */}
+            <Paper elevation={3} sx={{ mb: 3 }}>
+              <Box sx={{ p: 2, backgroundColor: "grey.300" }}>
+                <Typography variant="h6">Other Tickets</Typography>
+              </Box>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Title</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Priority</TableCell>
+                      <TableCell>Customer</TableCell>
+                      <TableCell>Agent</TableCell>
+                      <TableCell>Created</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {renderTicketTable(
+                      [...unassignedTickets, ...otherAgentTickets],
+                      true
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+
+            {/* Closed Tickets Section */}
+            {closedTickets.length > 0 && (
+              <Paper elevation={3}>
+                <Box sx={{ p: 2, backgroundColor: "grey.200" }}>
+                  <Typography variant="h6">Closed Tickets</Typography>
+                </Box>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>ID</TableCell>
+                        <TableCell>Title</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Priority</TableCell>
+                        <TableCell>Customer</TableCell>
+                        <TableCell>Agent</TableCell>
+                        <TableCell>Created</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {renderTicketTable(closedTickets, true)}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            )}
+          </Box>
+
+          {/* Right insights sidebar (~40%) */}
           <Box
             sx={{
-              p: 2,
-              backgroundColor: "primary.light",
-              color: "primary.contrastText",
+              flex: 2,
+              display: { xs: "none", md: "flex" },
+              flexDirection: "column",
+              gap: 3,
             }}
           >
-            <Typography variant="h6">My Tickets (In Progress)</Typography>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Priority</TableCell>
-                  <TableCell>Created</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>{renderTicketTable(myTickets, false)}</TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Workload Overview
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 2,
+                }}
+              >
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Total Tickets
+                  </Typography>
+                  <Typography variant="h5">{ticketCounts.total}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    My Open/In Progress
+                  </Typography>
+                  <Typography variant="h5">{myTickets.length}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Unassigned
+                  </Typography>
+                  <Typography variant="h6">
+                    {unassignedTickets.length}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Escalated
+                  </Typography>
+                  <Typography variant="h6" color="warning.main">
+                    {ticketCounts.escalated}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
 
-        {/* Other Tickets Section */}
-        <Paper elevation={3} sx={{ mb: 3 }}>
-          <Box sx={{ p: 2, backgroundColor: "grey.300" }}>
-            <Typography variant="h6">Other Tickets</Typography>
+            <Paper elevation={3} sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                By Priority
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2">Urgent</Typography>
+                  <Chip
+                    label={ticketCounts.byPriority.urgent || 0}
+                    color="error"
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2">High</Typography>
+                  <Chip
+                    label={ticketCounts.byPriority.high || 0}
+                    color="warning"
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2">Medium</Typography>
+                  <Chip
+                    label={ticketCounts.byPriority.medium || 0}
+                    color="info"
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2">Low</Typography>
+                  <Chip label={ticketCounts.byPriority.low || 0} size="small" />
+                </Box>
+              </Box>
+            </Paper>
           </Box>
-          <TableContainer>
-            <Table>
+        </Box>
+      </Container>
+    );
+  }
+
+  // For customers and admins, show all tickets in one table with a sidebar
+  return (
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4, mx: "auto" }}>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 3,
+          alignItems: "flex-start",
+        }}
+      >
+        {/* Main content column (~60%) */}
+        <Box sx={{ flex: 3 }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Agent Statistics Table for Admins */}
+          {role === "admin" && (
+            <Paper elevation={3} sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  p: 2,
+                  backgroundColor: "primary.light",
+                  color: "primary.contrastText",
+                }}
+              >
+                <Typography variant="h6">Agent Statistics</Typography>
+              </Box>
+              {statsLoading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : agentStats ? (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>
+                          <strong>Agent</strong>
+                        </TableCell>
+                        <TableCell>
+                          <strong>Email</strong>
+                        </TableCell>
+                        <TableCell align="right">
+                          <strong>In Progress</strong>
+                        </TableCell>
+                        <TableCell align="right">
+                          <strong>Resolved</strong>
+                        </TableCell>
+                        <TableCell align="right">
+                          <strong>Closed</strong>
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {agentStats.agents.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center">
+                            No agents found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        agentStats.agents.map((agent) => (
+                          <TableRow key={agent.id}>
+                            <TableCell>{agent.username}</TableCell>
+                            <TableCell>{agent.email}</TableCell>
+                            <TableCell align="right">
+                              <Chip
+                                label={agent.in_progress}
+                                color="primary"
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Chip
+                                label={agent.resolved}
+                                color="success"
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <Chip
+                                label={agent.closed}
+                                color="default"
+                                size="small"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                      <TableRow sx={{ backgroundColor: "grey.100" }}>
+                        <TableCell colSpan={2}>
+                          <strong>Unassigned Tickets</strong>
+                        </TableCell>
+                        <TableCell colSpan={3} align="right">
+                          <Chip
+                            label={agentStats.unassigned_tickets}
+                            color="warning"
+                            size="small"
+                            sx={{ fontWeight: "bold" }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : null}
+            </Paper>
+          )}
+
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+            <Typography variant="h4" component="h1">
+              {role === "customer" ? "Your Tickets" : "All Tickets"}
+            </Typography>
+            {role === "customer" && (
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => navigate("/tickets/new")}
+              >
+                Create Ticket
+              </Button>
+            )}
+          </Box>
+
+          <TableContainer component={Paper}>
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Title</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell>Priority</TableCell>
-                  <TableCell>Customer</TableCell>
-                  <TableCell>Agent</TableCell>
+                  {role !== "customer" && <TableCell>Customer</TableCell>}
+                  {role !== "customer" && <TableCell>Agent</TableCell>}
                   <TableCell>Created</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {renderTicketTable(
-                  [...unassignedTickets, ...otherAgentTickets],
-                  true
-                )}
+                {renderTicketTable(tickets, role !== "customer")}
               </TableBody>
             </Table>
           </TableContainer>
-        </Paper>
+        </Box>
 
-        {/* Closed Tickets Section */}
-        {closedTickets.length > 0 && (
-          <Paper elevation={3}>
-            <Box sx={{ p: 2, backgroundColor: "grey.200" }}>
-              <Typography variant="h6">Closed Tickets</Typography>
+        {/* Right insights sidebar (~40%) */}
+        <Box
+          sx={{
+            flex: 2,
+            display: { xs: "none", md: "flex" },
+            flexDirection: "column",
+            gap: 3,
+          }}
+        >
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Overview
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Total Tickets
+                </Typography>
+                <Typography variant="h5">{ticketCounts.total}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Open
+                </Typography>
+                <Typography variant="h5">
+                  {ticketCounts.byStatus.open || 0}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  In Progress
+                </Typography>
+                <Typography variant="h6">
+                  {ticketCounts.byStatus.in_progress || 0}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Resolved / Closed
+                </Typography>
+                <Typography variant="h6">
+                  {(ticketCounts.byStatus.resolved || 0) +
+                    (ticketCounts.byStatus.closed || 0)}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Escalated
+                </Typography>
+                <Typography variant="h6" color="warning.main">
+                  {ticketCounts.escalated}
+                </Typography>
+              </Box>
             </Box>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Title</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Priority</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Agent</TableCell>
-                    <TableCell>Created</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>{renderTicketTable(closedTickets, true)}</TableBody>
-              </Table>
-            </TableContainer>
           </Paper>
-        )}
-      </Container>
-    );
-  }
 
-  // For customers and admins, show all tickets in one table
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, mx: "auto" }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Agent Statistics Table for Admins */}
-      {role === "admin" && (
-        <Paper elevation={3} sx={{ mb: 3 }}>
-          <Box
-            sx={{
-              p: 2,
-              backgroundColor: "primary.light",
-              color: "primary.contrastText",
-            }}
-          >
-            <Typography variant="h6">Agent Statistics</Typography>
-          </Box>
-          {statsLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-              <CircularProgress />
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Priority Breakdown
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography variant="body2">Urgent</Typography>
+                <Chip
+                  label={ticketCounts.byPriority.urgent || 0}
+                  color="error"
+                  size="small"
+                />
+              </Box>
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography variant="body2">High</Typography>
+                <Chip
+                  label={ticketCounts.byPriority.high || 0}
+                  color="warning"
+                  size="small"
+                />
+              </Box>
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography variant="body2">Medium</Typography>
+                <Chip
+                  label={ticketCounts.byPriority.medium || 0}
+                  color="info"
+                  size="small"
+                />
+              </Box>
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography variant="body2">Low</Typography>
+                <Chip label={ticketCounts.byPriority.low || 0} size="small" />
+              </Box>
             </Box>
-          ) : agentStats ? (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>
-                      <strong>Agent</strong>
-                    </TableCell>
-                    <TableCell>
-                      <strong>Email</strong>
-                    </TableCell>
-                    <TableCell align="right">
-                      <strong>In Progress</strong>
-                    </TableCell>
-                    <TableCell align="right">
-                      <strong>Resolved</strong>
-                    </TableCell>
-                    <TableCell align="right">
-                      <strong>Closed</strong>
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {agentStats.agents.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        No agents found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    agentStats.agents.map((agent) => (
-                      <TableRow key={agent.id}>
-                        <TableCell>{agent.username}</TableCell>
-                        <TableCell>{agent.email}</TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={agent.in_progress}
-                            color="primary"
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={agent.resolved}
-                            color="success"
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={agent.closed}
-                            color="default"
-                            size="small"
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                  <TableRow sx={{ backgroundColor: "grey.100" }}>
-                    <TableCell colSpan={2}>
-                      <strong>Unassigned Tickets</strong>
-                    </TableCell>
-                    <TableCell colSpan={3} align="right">
-                      <Chip
-                        label={agentStats.unassigned_tickets}
-                        color="warning"
-                        size="small"
-                        sx={{ fontWeight: "bold" }}
-                      />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : null}
-        </Paper>
-      )}
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Tickets
-        </Typography>
-        {role === "customer" && (
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => navigate("/tickets/new")}
-          >
-            Create Ticket
-          </Button>
-        )}
+          </Paper>
+        </Box>
       </Box>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Priority</TableCell>
-              {role !== "customer" && <TableCell>Customer</TableCell>}
-              {role !== "customer" && <TableCell>Agent</TableCell>}
-              <TableCell>Created</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {renderTicketTable(tickets, role !== "customer")}
-          </TableBody>
-        </Table>
-      </TableContainer>
     </Container>
   );
 };

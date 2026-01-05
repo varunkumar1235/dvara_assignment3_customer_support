@@ -73,11 +73,20 @@ const CreateTicket = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mx: 'auto' }}>
-      <Box sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, mx: "auto" }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 2fr) minmax(0, 1fr)" },
+          gap: 3,
+        }}
+      >
         <Paper elevation={3} sx={{ p: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom>
             Create New Ticket
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Share as much detail as you can so our team can help you faster.
           </Typography>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -157,6 +166,45 @@ const CreateTicket = () => {
               </Button>
             </Box>
           </form>
+        </Paper>
+
+        <Paper
+          elevation={3}
+          sx={{
+            p: 3,
+            display: { xs: "none", md: "block" },
+            background:
+              "linear-gradient(135deg, rgba(25,118,210,0.08), rgba(25,118,210,0.02))",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Tips for a great ticket
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Help us resolve your issue quickly:
+          </Typography>
+          <ul style={{ marginTop: 0, paddingLeft: "1.2rem" }}>
+            <li>
+              <Typography variant="body2">
+                Describe what you were trying to do and what went wrong.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="body2">
+                Include any error messages or screenshots.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="body2">
+                Tell us how often this happens and since when.
+              </Typography>
+            </li>
+            <li>
+              <Typography variant="body2">
+                Attach logs or files if they are relevant.
+              </Typography>
+            </li>
+          </ul>
         </Paper>
       </Box>
     </Container>
