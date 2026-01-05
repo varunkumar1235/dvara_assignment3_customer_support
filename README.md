@@ -168,6 +168,20 @@ You can also create users manually using the command line:
 | `filename` | VARCHAR(255)| NOT NULL | Stored filename |
 | `file_path` | VARCHAR(500)| NOT NULL | Path on disk |
 
+### Seed Script Summary
+
+When you run `npm run seed`, the following data is automatically populated:
+
+**1. Users**
+- **Admin**: `admin:admin@example.com`
+- **Agent**: `agent:agent@example.com`
+- **Customer**: `customer:customer@example.com`
+*Password for all is `password123`*
+
+**2. Tickets** (Created for `customer@example.com`)
+- **Login Issue**: High Priority, Open status.
+- **Feature Request**: Low Priority, Open status.
+
 ---
 
 ## API Documentation
