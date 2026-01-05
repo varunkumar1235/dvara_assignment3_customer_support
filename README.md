@@ -10,7 +10,7 @@ Frontend is a modern React + MUI dashboard; backend is Node/Express with Postgre
 
 ## Demo Video
 
-[![Watch the demo](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+[![Watch the demo](https://img.youtube.com/vi/ujKjRXTh1tE/0.jpg)](https://youtu.be/ujKjRXTh1tE)
 
 ## Features
 
