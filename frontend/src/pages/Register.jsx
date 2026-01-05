@@ -104,7 +104,8 @@ const Register = () => {
             </Typography>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Set up access to your support workspace and for support in a few quick steps.
+              Set up access to your support workspace and for support in a few
+              quick steps.
             </Typography>
 
             {error && (
@@ -216,23 +217,22 @@ const Register = () => {
           backgroundImage: "url('/images/auth-bg.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          backgroundPosition: "center",
         }}
       >
         <Box
-             component="img"
-             src="/images/logo.jpg"
-             alt="Logo"
-             sx={{
-               position: "absolute",
-               top: "50%",
-               left: { xs: "50%", md: "70%" }, // Center on mobile, center of right 60% on desktop
-               transform: "translate(-50%, -50%)",
-               width: "150px",
-               height: "auto",
-               borderRadius: "50%",
-               boxShadow: 3,
-             }}
+          component="img"
+          src="/images/logo.jpg"
+          alt="Logo"
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: { xs: "50%", md: "70%" }, // Center on mobile, center of right 60% on desktop
+            transform: "translate(-50%, -50%)",
+            width: "150px",
+            height: "auto",
+            borderRadius: "50%",
+            boxShadow: 3,
+          }}
         />
       </Box>
     </Box>

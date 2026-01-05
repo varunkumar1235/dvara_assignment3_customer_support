@@ -1,4 +1,8 @@
-# Customer Support Ticketing System
+# Customer Support System
+
+## 📚 Documentation
+- **[SLA & Escalation Policy](./SLA_ESCALATION.md)**: Details on response times, resolution limits, and the auto-escalation process.
+- **[Status Explanations](./STATUS_EXPLANATION.md)**: Breakdown of ticket statuses and what they mean.
 
 A full-stack helpdesk system with role-based access control, SLA-aware ticket lifecycle, comments, and file uploads.
 Frontend is a modern React + MUI dashboard; backend is Node/Express with PostgreSQL and JWT auth.
@@ -37,21 +41,18 @@ Frontend is a modern React + MUI dashboard; backend is Node/Express with Postgre
 3. **Configure Environment Variables**:
    Create a `.env` file in `backend/` as described in the [Environment Configuration](#environment-configuration) section.
 
-4. **Initialize Database** (Auto-init on start) or manually via seed:
-   The application automatically attempts to create tables on startup.
+4. **Start the Server**:
+   ```bash
+   npm run dev
+   ```
+   Server runs on `http://localhost:5000` by default.
 
-5. **Seed the Database** (Recommended):
+5. **Seed the Database**:
    Populate the database with sample users (Admin, Agent, Customer) and tickets.
 
    ```bash
    npm run seed
    ```
-
-6. **Start the Server**:
-   ```bash
-   npm run dev
-   ```
-   Server runs on `http://localhost:5000` by default.
 
 ### Frontend Setup
 

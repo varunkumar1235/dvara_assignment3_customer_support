@@ -5,12 +5,12 @@ The system automatically escalates tickets when SLA breaches occur, ensuring tim
 
 ## SLA Time Limits
 
-### First Response Time: 24 hours
-- **Trigger**: No agent response (comment) within 24 hours of ticket creation (or escalation)
+### First Response Time: 5 minutes
+- **Trigger**: No agent response (comment) within 5 minutes of ticket creation (or escalation)
 - **Action**: Ticket is escalated
 
-### Resolution Time: 72 hours
-- **Trigger**: Ticket not resolved within 72 hours after first response
+### Resolution Time: 15 minutes
+- **Trigger**: Ticket not resolved within 15 minutes after first response
 - **Action**: Ticket is escalated
 
 ## Escalation Process
@@ -29,7 +29,7 @@ When a ticket is escalated:
 
 3. **Timer Reset**: 
    - `first_response_at` is reset to NULL
-   - `sla_deadline` is reset to 24 hours from escalation time
+   - `sla_deadline` is reset to 15 minutes from escalation time
    - `updated_at` is set to current time
 
 4. **Escalation Tracking**:
@@ -50,14 +50,12 @@ After escalation, if the new SLA is breached again:
 - Escalated tickets have:
   - Orange/amber background highlight
   - Orange left border
-  - "ESCALATED" chip badge
   - Escalation count shown next to priority
 
 ### Ticket Detail Page
 - Escalated tickets show:
   - Orange left border
   - Amber background tint
-  - "ESCALATED" warning chip
   - Warning alert explaining the escalation
   - Escalation count if multiple escalations
 
