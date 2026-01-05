@@ -76,3 +76,5 @@ New columns added to `tickets` table:
 - `escalation_count` (INTEGER): Number of times the ticket has been escalated
 
 
+
+
