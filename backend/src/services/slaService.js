@@ -28,9 +28,12 @@ const checkAndEscalateTicket = async (ticketId) => {
 
     const ticket = ticketResult.rows[0];
 
-    // Don't escalate closed tickets
-    if (ticket.status === "closed") {
-      return { escalated: false, reason: "Ticket is closed" };
+    // Don't escalate closed or resolved tickets
+    if (ticket.status === "closed" || ticket.status === "resolved") {
+      return {
+        escalated: false,
+        reason: `Ticket is ${ticket.status} and should not be escalated`,
+      };
     }
 
     const now = new Date();

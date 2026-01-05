@@ -222,7 +222,7 @@ const updateTicketStatus = async (req, res, next) => {
 
     // Check if ticket is assigned and verify agent has permission
     const ticketCheck = await pool.query(
-      "SELECT agent_id, status FROM tickets WHERE id = $1",
+      "SELECT agent_id, status, first_response_at, sla_deadline FROM tickets WHERE id = $1",
       [id]
     );
 
@@ -250,15 +250,30 @@ const updateTicketStatus = async (req, res, next) => {
     const now = new Date();
     const updateFields = { updated_at: now };
     let customerResponseDeadline = null;
-    
+
     // If ticket is unassigned, assign it to the current agent
     const agentIdToSet = ticket.agent_id || userId;
-    
+
+    // Handle first response vs resolution timers
+    let firstResponseAt = ticket.first_response_at;
+    let slaDeadline = ticket.sla_deadline;
+
+    // If moving to in_progress and there was no first response yet,
+    // treat this status change as the first response and start the 15 min resolution SLA.
+    if (status === "in_progress" && !firstResponseAt) {
+      firstResponseAt = now;
+      const resolutionDeadline = new Date(now);
+      resolutionDeadline.setMinutes(resolutionDeadline.getMinutes() + 15);
+      slaDeadline = resolutionDeadline;
+    }
+
     if (status === "resolved") {
       updateFields.resolved_at = now;
       // Set customer response deadline to 5 minutes from now
       customerResponseDeadline = new Date(now);
-      customerResponseDeadline.setMinutes(customerResponseDeadline.getMinutes() + 5);
+      customerResponseDeadline.setMinutes(
+        customerResponseDeadline.getMinutes() + 5
+      );
     } else if (status === "closed") {
       updateFields.closed_at = now;
       // Clear customer response deadline when closed
@@ -270,8 +285,15 @@ const updateTicketStatus = async (req, res, next) => {
 
     const result = await pool.query(
       `UPDATE tickets 
-       SET status = $1, agent_id = $2, updated_at = $3, resolved_at = $4, closed_at = $5, customer_response_deadline = $6
-       WHERE id = $7
+       SET status = $1,
+           agent_id = $2,
+           updated_at = $3,
+           resolved_at = $4,
+           closed_at = $5,
+           customer_response_deadline = $6,
+           first_response_at = $7,
+           sla_deadline = $8
+       WHERE id = $9
        RETURNING *`,
       [
         status,
@@ -280,6 +302,8 @@ const updateTicketStatus = async (req, res, next) => {
         updateFields.resolved_at || null,
         updateFields.closed_at || null,
         customerResponseDeadline,
+        firstResponseAt,
+        slaDeadline,
         id,
       ]
     );

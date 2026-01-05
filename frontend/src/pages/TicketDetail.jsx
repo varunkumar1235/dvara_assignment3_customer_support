@@ -237,8 +237,13 @@ const TicketDetail = () => {
   };
 
   const calculateSLATime = () => {
-    // Don't show SLA timer for closed tickets
-    if (!ticket?.sla_deadline || ticket.status === "closed") return null;
+    // SLA timer is only for open and in_progress tickets
+    if (
+      !ticket?.sla_deadline ||
+      ticket.status === "closed" ||
+      ticket.status === "resolved"
+    )
+      return null;
     const deadline = new Date(ticket.sla_deadline);
     const now = new Date();
     const diff = deadline - now;
