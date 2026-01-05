@@ -1,17 +1,57 @@
-const { Pool } = require("pg");
+const { Pool, Client } = require("pg");
 require("dotenv").config();
 
-const pool = new Pool({
+const dbConfig = {
   host: process.env.DB_HOST || "localhost",
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
   database: process.env.DB_NAME || "ticketing_db",
   user: process.env.DB_USER || "postgres",
   password: process.env.DB_PASSWORD || "kumar",
-});
+};
+
+const pool = new Pool(dbConfig);
+
+// Create database if it doesn't exist
+const createDatabaseIfNotExists = async () => {
+  const client = new Client({
+    ...dbConfig,
+    database: "postgres", // Connect to default postgres database
+  });
+
+  try {
+    await client.connect();
+    
+    // Check if database exists
+    const checkResult = await client.query(
+      `SELECT 1 FROM pg_database WHERE datname = $1`,
+      [dbConfig.database]
+    );
+
+    if (checkResult.rows.length === 0) {
+      console.log(`Database ${dbConfig.database} does not exist. Creating...`);
+      // CREATE DATABASE cannot run in a transaction block, so we run it directly
+      await client.query(`CREATE DATABASE "${dbConfig.database}"`);
+      console.log(`Database ${dbConfig.database} created successfully.`);
+    } else {
+      console.log(`Database ${dbConfig.database} already exists.`);
+    }
+  } catch (error) {
+    console.error("Error creating database:", error);
+    // If error is "database already exists", we can ignore it, but the check above should handle it.
+    // However, if the user doesn't have permission, this will fail.
+    throw error;
+  } finally {
+    await client.end();
+  }
+};
 
 // Initialize database schema
 const initDatabase = async () => {
   try {
+    // Ensure database exists first
+    await createDatabaseIfNotExists();
+
+    // Now we can use the pool which connects to our specific database
     // Users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
