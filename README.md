@@ -79,7 +79,8 @@ Frontend is a modern React + MUI dashboard; backend is Node/Express with Postgre
 
    Access the app at `http://localhost:5173`.
 
-4. **It is important to note that the frontend is customer-specific, meaning the Register functionality is only for Customers, while Login is available for Admins, Agents, and Customers. New Agents or Admins are created manually using the CLI as described in the [Manual User Creation via CLI](#manual-user-creation-via-cli) section.**
+4. **It is important to note that the frontend is customer-specific**:
+   Meaning the Register functionality is only for Customers, while Login is available for Admins, Agents, and Customers. New Agents or Admins are created manually using the CLI as described in the [Manual User Creation via CLI](#manual-user-creation-via-cli) section.
 
 ---
 
