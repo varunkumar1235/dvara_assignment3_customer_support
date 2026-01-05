@@ -312,7 +312,8 @@ const TicketDetail = () => {
               borderLeft: ticket.escalated ? "6px solid #ff9800" : "none",
               backgroundColor: ticket.escalated
                 ? "rgba(255, 152, 0, 0.05)"
-                : "inherit",
+                : "rgba(255, 255, 255, 0.9)",
+              backdropFilter: "blur(10px)"
             }}
           >
             <Box
@@ -320,13 +321,6 @@ const TicketDetail = () => {
             >
               <Box>
                 <Typography variant="h4">Ticket #{ticket.id}</Typography>
-                {ticket.escalated && (
-                  <Chip
-                    label="ESCALATED"
-                    color="warning"
-                    sx={{ mt: 1, fontWeight: "bold" }}
-                  />
-                )}
               </Box>
               <Box
                 sx={{
@@ -398,7 +392,7 @@ const TicketDetail = () => {
             </Typography>
           </Paper>
 
-          <Paper elevation={3} sx={{ p: 3 }}>
+          <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
             <Typography variant="h6" gutterBottom>
               Comments
             </Typography>
@@ -436,7 +430,7 @@ const TicketDetail = () => {
         {/* Right: status, attachments, actions */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {(role === "agent" || role === "customer") && (
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
               <Typography variant="h6" gutterBottom>
                 Status & Controls
               </Typography>
@@ -542,7 +536,7 @@ const TicketDetail = () => {
           )}
 
           {files.length > 0 && (
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
               <Typography variant="h6" gutterBottom>
                 Attachments
               </Typography>
@@ -573,7 +567,7 @@ const TicketDetail = () => {
           )}
 
           {role === "agent" && (
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
               {ticket.status !== "closed" ? (
                 <>
                   <Typography variant="h6" gutterBottom>

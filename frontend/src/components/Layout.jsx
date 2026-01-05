@@ -40,11 +40,15 @@ const Layout = ({ children }) => {
         width: "100vw",
         maxWidth: "100vw",
         bgcolor: "background.default",
+        backgroundImage: 'url("/images/auth-bg.jpg")',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      <AppBar position="fixed" elevation={2}>
+      <AppBar position="fixed" elevation={0} sx={{ bgcolor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(0,0,0,0.05)', color: 'text.primary' }}>
         <Toolbar>
           <Typography
             variant="h6"
@@ -57,7 +61,7 @@ const Layout = ({ children }) => {
               fontWeight: 600,
             }}
           >
-            Dvara Helpdesk
+            Customer Helpdesk
           </Typography>
           {user && (
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

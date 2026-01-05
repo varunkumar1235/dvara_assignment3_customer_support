@@ -143,14 +143,6 @@ const Dashboard = () => {
         <TableCell>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {ticket.title}
-            {ticket.escalated && (
-              <Chip
-                label="ESCALATED"
-                color="warning"
-                size="small"
-                sx={{ fontWeight: "bold" }}
-              />
-            )}
           </Box>
         </TableCell>
         <TableCell>
@@ -260,7 +252,7 @@ const Dashboard = () => {
             )}
 
             {/* My Tickets Section */}
-            <Paper elevation={3} sx={{ mb: 3 }}>
+            <Paper elevation={3} sx={{ mb: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
               <Box
                 sx={{
                   p: 2,
@@ -288,7 +280,7 @@ const Dashboard = () => {
             </Paper>
 
             {/* Other Tickets Section */}
-            <Paper elevation={3} sx={{ mb: 3 }}>
+            <Paper elevation={3} sx={{ mb: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
               <Box sx={{ p: 2, backgroundColor: "grey.300" }}>
                 <Typography variant="h6">Other Tickets</Typography>
               </Box>
@@ -318,7 +310,7 @@ const Dashboard = () => {
 
             {/* Closed Tickets Section */}
             {closedTickets.length > 0 && (
-              <Paper elevation={3}>
+              <Paper elevation={3} sx={{ bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
                 <Box sx={{ p: 2, backgroundColor: "grey.200" }}>
                   <Typography variant="h6">Closed Tickets</Typography>
                 </Box>
@@ -354,7 +346,7 @@ const Dashboard = () => {
               gap: 3,
             }}
           >
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
               <Typography variant="h6" gutterBottom>
                 Workload Overview
               </Typography>
@@ -397,7 +389,7 @@ const Dashboard = () => {
               </Box>
             </Paper>
 
-            <Paper elevation={3} sx={{ p: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
               <Typography variant="h6" gutterBottom>
                 By Priority
               </Typography>
@@ -457,116 +449,217 @@ const Dashboard = () => {
             </Alert>
           )}
 
-          {/* Agent Statistics Table for Admins */}
+          {/* Agent Statistics Section for Admins */}
           {role === "admin" && (
-            <Paper elevation={3} sx={{ mb: 3 }}>
+            <>
+              {/* Summary Cards */}
               <Box
                 sx={{
-                  p: 2,
-                  backgroundColor: "primary.light",
-                  color: "primary.contrastText",
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                  gap: 3,
+                  mb: 3,
                 }}
               >
-                <Typography variant="h6">Agent Statistics</Typography>
+                <Paper
+                  elevation={3}
+                  sx={{
+                    p: 3,
+                    bgcolor: "rgba(255, 255, 255, 0.8)",
+                    backdropFilter: "blur(10px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="h4" color="primary.main" fontWeight="bold">
+                    {agentStats?.agents.length || 0}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Agents
+                  </Typography>
+                </Paper>
+                <Paper
+                  elevation={3}
+                  sx={{
+                    p: 3,
+                    bgcolor: "rgba(255, 255, 255, 0.8)",
+                    backdropFilter: "blur(10px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="h4" color="warning.main" fontWeight="bold">
+                    {agentStats?.unassigned_tickets || 0}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Unassigned Tickets
+                  </Typography>
+                </Paper>
               </Box>
-              {statsLoading ? (
-                <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-                  <CircularProgress />
+
+              <Paper
+                elevation={3}
+                sx={{
+                  mb: 3,
+                  bgcolor: "rgba(255, 255, 255, 0.9)",
+                  backdropFilter: "blur(10px)",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 2,
+                    borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="h6" fontWeight="600">
+                    Agent Performance
+                  </Typography>
                 </Box>
-              ) : agentStats ? (
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>
-                          <strong>Agent</strong>
-                        </TableCell>
-                        <TableCell>
-                          <strong>Email</strong>
-                        </TableCell>
-                        <TableCell align="right">
-                          <strong>In Progress</strong>
-                        </TableCell>
-                        <TableCell align="right">
-                          <strong>Resolved</strong>
-                        </TableCell>
-                        <TableCell align="right">
-                          <strong>Closed</strong>
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {agentStats.agents.length === 0 ? (
+                {statsLoading ? (
+                  <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : agentStats ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead sx={{ bgcolor: "rgba(0, 0, 0, 0.02)" }}>
                         <TableRow>
-                          <TableCell colSpan={5} align="center">
-                            No agents found
-                          </TableCell>
+                          <TableCell>Agent</TableCell>
+                          <TableCell align="center">In Progress</TableCell>
+                          <TableCell align="center">Resolved</TableCell>
+                          <TableCell align="center">Closed</TableCell>
+                          <TableCell align="center">Performance</TableCell>
                         </TableRow>
-                      ) : (
-                        agentStats.agents.map((agent) => (
-                          <TableRow key={agent.id}>
-                            <TableCell>{agent.username}</TableCell>
-                            <TableCell>{agent.email}</TableCell>
-                            <TableCell align="right">
-                              <Chip
-                                label={agent.in_progress}
-                                color="primary"
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell align="right">
-                              <Chip
-                                label={agent.resolved}
-                                color="success"
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell align="right">
-                              <Chip
-                                label={agent.closed}
-                                color="default"
-                                size="small"
-                              />
+                      </TableHead>
+                      <TableBody>
+                        {agentStats.agents.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} align="center">
+                              <Box sx={{ py: 3 }}>
+                                <Typography color="text.secondary">
+                                  No agents found
+                                </Typography>
+                              </Box>
                             </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                      <TableRow sx={{ backgroundColor: "grey.100" }}>
-                        <TableCell colSpan={2}>
-                          <strong>Unassigned Tickets</strong>
-                        </TableCell>
-                        <TableCell colSpan={3} align="right">
-                          <Chip
-                            label={agentStats.unassigned_tickets}
-                            color="warning"
-                            size="small"
-                            sx={{ fontWeight: "bold" }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : null}
-            </Paper>
+                        ) : (
+                          agentStats.agents.map((agent) => (
+                            <TableRow key={agent.id} hover>
+                              <TableCell>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                                  <Box
+                                    sx={{
+                                      width: 40,
+                                      height: 40,
+                                      borderRadius: "50%",
+                                      bgcolor: "primary.light",
+                                      color: "primary.contrastText",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    {agent.username.charAt(0).toUpperCase()}
+                                  </Box>
+                                  <Box>
+                                    <Typography variant="subtitle2" fontWeight="600">
+                                      {agent.username}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {agent.email}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Typography
+                                  variant="h6"
+                                  color="primary.main"
+                                  sx={{ fontWeight: "bold" }}
+                                >
+                                  {agent.in_progress}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Typography
+                                  variant="h6"
+                                  color="success.main"
+                                  sx={{ fontWeight: "bold" }}
+                                >
+                                  {agent.resolved}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Typography variant="h6" color="text.secondary">
+                                  {agent.closed}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="center">
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <CircularProgress
+                                        variant="determinate"
+                                        value={((parseInt(agent.resolved) + parseInt(agent.closed)) / (parseInt(agent.in_progress) + parseInt(agent.resolved) + parseInt(agent.closed) || 1)) * 100}
+                                        size={40}
+                                        thickness={4}
+                                        color="success"
+                                    />
+                                    <Typography variant="caption" component="div" color="text.secondary" sx={{ml: 1}}>
+                                        {Math.round(((parseInt(agent.resolved) + parseInt(agent.closed)) / (parseInt(agent.in_progress) + parseInt(agent.resolved) + parseInt(agent.closed) || 1)) * 100)}%
+                                    </Typography>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : null}
+              </Paper>
+            </>
           )}
 
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-            <Typography variant="h4" component="h1">
-              {role === "customer" ? "Your Tickets" : "All Tickets"}
-            </Typography>
-            {role === "customer" && (
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={() => navigate("/tickets/new")}
+          <Paper elevation={3} sx={{ bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)", overflow: "hidden" }}>
+            <Box
+              sx={{
+                p: 2,
+                borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography
+                variant="h6"
+                fontWeight="600"
+                sx={{
+                  letterSpacing: "-0.02em",
+                  fontFamily: `"Inter", "Roboto", "Helvetica", "Arial", sans-serif`,
+                }}
               >
-                Create Ticket
-              </Button>
-            )}
-          </Box>
+                {role === "customer" ? "Your Tickets" : "All Tickets"}
+              </Typography>
 
-          <TableContainer component={Paper}>
+              {role === "customer" && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<Add />}
+                  onClick={() => navigate("/tickets/new")}
+                >
+                  Create Ticket
+                </Button>
+              )}
+            </Box>
+
+            <TableContainer>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -584,7 +677,8 @@ const Dashboard = () => {
                 {renderTicketTable(tickets, role !== "customer")}
               </TableBody>
             </Table>
-          </TableContainer>
+            </TableContainer>
+          </Paper>
         </Box>
 
         {/* Right insights sidebar (~40%) */}
@@ -596,7 +690,7 @@ const Dashboard = () => {
             gap: 3,
           }}
         >
-          <Paper elevation={3} sx={{ p: 3 }}>
+          <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
             <Typography variant="h6" gutterBottom>
               Overview
             </Typography>
@@ -650,7 +744,7 @@ const Dashboard = () => {
             </Box>
           </Paper>
 
-          <Paper elevation={3} sx={{ p: 3 }}>
+          <Paper elevation={3} sx={{ p: 3, bgcolor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)" }}>
             <Typography variant="h6" gutterBottom>
               Priority Breakdown
             </Typography>

@@ -67,11 +67,21 @@ const Login = () => {
       >
         <Container maxWidth="sm" disableGutters>
           <Paper elevation={0} sx={{ p: { xs: 3, md: 4 } }}>
-            <Typography variant="h4" component="h1" gutterBottom align="left">
-              Welcome back
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
+              align="left"
+              sx={{
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                fontFamily: `"Inter", "Roboto", "Helvetica", "Arial", sans-serif`,
+              }}
+            >
+              Customer Helpdesk
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Sign in to manage tickets, track SLAs, and support your customers.
+              Sign in to resolve tickets or to file a ticket as a customer
             </Typography>
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -130,7 +140,23 @@ const Login = () => {
           // and then uncomment the line below:
           backgroundImage: "url('/images/auth-bg.jpg')",
         }}
-      />
+      >
+        <Box
+             component="img"
+             src="/images/logo.jpg"
+             alt="Logo"
+             sx={{
+               position: "absolute",
+               top: "50%",
+               left: { xs: "50%", md: "70%" }, // Center on mobile, center of right 60% on desktop (40% + 30% = 70%)
+               transform: "translate(-50%, -50%)",
+               width: "150px",
+               height: "auto",
+               borderRadius: "50%",
+               boxShadow: 3,
+             }}
+        />
+      </Box>
     </Box>
   );
 };
