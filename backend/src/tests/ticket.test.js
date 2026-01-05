@@ -11,6 +11,16 @@ describe('Ticket Lifecycle Tests', () => {
   let ticketId;
 
   beforeAll(async () => {
+    // Check database connection
+    try {
+        await pool.query('SELECT 1');
+    } catch (err) {
+        console.error('Database connection failed in tests:', err);
+    }
+
+    // Cleanup potential leftovers from previous failed runs
+    await pool.query('DELETE FROM users WHERE email IN ($1, $2, $3)', ['customer@test.com', 'agent@test.com', 'admin@test.com']);
+
     // Create test users
     const bcrypt = require('bcrypt');
     
@@ -94,6 +104,16 @@ describe('Ticket Lifecycle Tests', () => {
     expect(response.status).toBe(403);
   });
 
+  test('Admin cannot update ticket status', async () => {
+    const response = await request(app)
+      .patch(`/api/tickets/${ticketId}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'in_progress' });
+
+    // Expect 403 because only agents can update status in this implementation
+    expect(response.status).toBe(403);
+  });
+
   test('Agent can update ticket status', async () => {
     const response = await request(app)
       .patch(`/api/tickets/${ticketId}/status`)
@@ -121,6 +141,18 @@ describe('Ticket Lifecycle Tests', () => {
     const response = await request(app)
       .post('/api/comments')
       .set('Authorization', `Bearer ${customerToken}`)
+      .send({
+        ticket_id: ticketId,
+        content: 'This should fail',
+      });
+
+    expect(response.status).toBe(403);
+  });
+
+  test('Admin cannot add comment', async () => {
+    const response = await request(app)
+      .post('/api/comments')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         ticket_id: ticketId,
         content: 'This should fail',

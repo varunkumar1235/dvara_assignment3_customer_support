@@ -5,7 +5,8 @@
   "scripts": {
     "test": "jest",
     "dev": "nodemon src/app.js",
-    "create-user": "node src/scripts/createUser.js"
+    "create-user": "node src/scripts/createUser.js",
+    "seed": "node src/scripts/seed.js"
   },
   "keywords": [],
   "author": "",

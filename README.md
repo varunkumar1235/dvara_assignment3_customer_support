@@ -1,6 +1,6 @@
 # Customer Support Ticketing System
 
-A full-stack helpdesk system with role-based access control, SLA-aware ticket lifecycle, comments, and file uploads.  
+A full-stack helpdesk system with role-based access control, SLA-aware ticket lifecycle, comments, and file uploads.
 Frontend is a modern React + MUI dashboard; backend is Node/Express with PostgreSQL and JWT auth.
 
 ## Features
@@ -8,162 +8,164 @@ Frontend is a modern React + MUI dashboard; backend is Node/Express with Postgre
 - **Role-Based Access Control**: Admin, Agent, and Customer roles.
 - **Ticket Lifecycle**: Open → In Progress → Resolved → Closed with SLA timers and escalation.
 - **Comments & Attachments**: Agents can comment on tickets and attach files.
-- **Auth & Security Basics**:
-  - Unique **username** and **email** for every user.
-  - Passwords are **hashed with bcrypt** and must be **at least 8 characters**.
-  - Email format validation and basic username length validation.
+- **Auth & Security**: JWT-based authentication, bcrypt password hashing.
 
-## Tech Stack
+---
 
-- **Backend**: Node.js, Express, PostgreSQL, JWT, Multer, Jest + Supertest.
-- **Frontend**: React (Vite), Material UI (MUI), React Router, Axios.
+## Setup Steps
+
+### Prerequisites
+- Node.js (v14+)
+- PostgreSQL (v12+)
+
+### Backend Setup
+
+1. **Navigate to backend directory**:
+   ```bash
+   cd backend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables**:
+   Create a `.env` file in `backend/` as described in the [Environment Configuration](#environment-configuration) section.
+
+4. **Initialize Database** (Auto-init on start) or manually via seed:
+   The application automatically attempts to create tables on startup.
+
+5. **Seed the Database** (Recommended):
+   Populate the database with sample users (Admin, Agent, Customer) and tickets.
+   ```bash
+   npm run seed
+   ```
+
+6. **Start the Server**:
+   ```bash
+   npm run dev
+   ```
+   Server runs on `http://localhost:5000` by default.
+
+### Frontend Setup
+
+1. **Navigate to frontend directory**:
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Start the Frontend**:
+   ```bash
+   npm run dev
+   ```
+   Access the app at `http://localhost:5173`.
+
+---
 
 ## Environment Configuration
 
-Create a `.env` file in the **backend** folder (copy from `.env.example` if present) with at least:
+Create a `.env` file in the **backend** folder with the following variables:
 
-```env
-PORT=5000
-JWT_SECRET=change-me-in-production
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | API Server Port | `5000` |
+| `JWT_SECRET` | Secret key for JWT signing | `change-me-in-production` |
+| `DB_HOST` | Database Host | `localhost` |
+| `DB_PORT` | Database Port | `5432` |
+| `DB_NAME` | Database Name | `ticketing_db` |
+| `DB_USER` | Database User | `postgres` |
+| `DB_PASSWORD` | Database Password | `your_postgres_password_here` |
 
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=ticketing_db
-DB_USER=postgres
-DB_PASSWORD=your_postgres_password_here
-```
+For the **frontend** (optional `frontend/.env`):
 
-For the **frontend** (Vite), you can optionally create `frontend/.env`:
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_BASE_URL` | Check backend URL | `http://localhost:5000/api` |
 
-```env
-VITE_API_BASE_URL=http://localhost:5000/api
-```
+---
 
-If `VITE_API_BASE_URL` is not set, the frontend defaults to `http://localhost:5000/api`.
+## Role Credentials
 
-## Backend Setup
+After running `npm run seed`, the following default accounts are available:
 
-```bash
-cd backend
-npm install
-npm run dev   # runs Express on http://localhost:5000
-```
+| Role | Email | Password | Permissions |
+|------|-------|----------|-------------|
+| **Admin** | `admin@example.com` | `password123` | Full access to all tickets, users, and stats. |
+| **Agent** | `agent@example.com` | `password123` | Manage tickets, update status, add comments. |
+| **Customer** | `customer@example.com` | `password123` | Create tickets, view own tickets. |
 
-The database schema (users, tickets, comments, files, etc.) is created automatically on server startup via `initDatabase()`.
+---
 
-## Frontend Setup
+## API Documentation
 
-```bash
-cd frontend
-npm install
-npm run dev   # Vite dev server on http://localhost:5173
-```
+### Authentication
 
-The frontend talks to the backend via `VITE_API_BASE_URL` (or `http://localhost:5000/api` by default).
+- **Register (Customer)**
+  - `POST /api/auth/register`
+  - Body: `{ "username": "user", "email": "user@test.com", "password": "password" }`
 
-## Auth Rules & Validation
+- **Login**
+  - `POST /api/auth/login`
+  - Body: `{ "email": "admin@example.com", "password": "password123" }`
+  - Returns `token` (JWT) to be used in `Authorization: Bearer <token>` header.
 
-- **Registration (`POST /api/auth/register`)**
-  - Required fields: `username`, `email`, `password`.
-  - `username`:
-    - Trimmed and must be **at least 3 characters**.
-    - Must be unique.
-  - `email`:
-    - Trimmed, lowercased, must match a basic email pattern.
-    - Must be unique.
-  - `password`:
-    - Must be **at least 8 characters**.
-    - Stored only as a bcrypt hash.
-  - `role` is forced to `customer` when registering via the public endpoint.
+- **Get Current User**
+  - `GET /api/auth/me`
 
-- **Login (`POST /api/auth/login`)**
-  - Requires `email` and `password`.
-  - Returns a JWT containing `id`, `username`, and `role`.
+### Tickets
 
-## API Overview
+- **Create Ticket**
+  - `POST /api/tickets`
+  - Body: `{ "title": "Help", "description": "Issue details", "priority": "high" }`
 
-- **Auth**
-  - `POST /api/auth/register` – Register a new customer.
-  - `POST /api/auth/login` – Login.
-  - `GET /api/auth/me` – Get current user (requires JWT).
+- **List Tickets**
+  - `GET /api/tickets` (Filters applied based on user role)
 
-- **Tickets**
-  - `POST /api/tickets` – Create ticket (customer).
-  - `GET /api/tickets` – List tickets (filtered by role).
-  - `GET /api/tickets/:id` – Get ticket details.
-  - `PATCH /api/tickets/:id/status` – Update status (agent/admin).
-  - `PATCH /api/tickets/:id/assign` – Assign agent (agent/admin).
+- **Get Ticket Details**
+  - `GET /api/tickets/:id`
 
-- **Comments**
-  - `POST /api/comments` – Add comment (agent/admin).
+- **Update Status** (Agent/Admin)
+  - `PATCH /api/tickets/:id/status`
+  - Body: `{ "status": "in_progress" }`
 
-- **Files**
-  - `POST /api/files/upload` – Upload file.
-  - `GET /api/files/:id` – Download file.
+- **Assign Ticket** (Agent/Admin)
+  - `PATCH /api/tickets/:id/assign`
+  - Body: `{ "agent_id": 123 }`
 
-## Role Permissions (High Level)
+### Comments
 
-- **Customer**
-  - Register, login.
-  - Create tickets and view **own** tickets.
-  - Confirm or reject resolutions via the ticket detail page.
+- **Add Comment** (Agent/Admin)
+  - `POST /api/comments`
+  - Body: `{ "ticket_id": 1, "content": "Looking into it." }`
 
-- **Agent**
-  - View all tickets.
-  - Update ticket status, add comments, and handle attachments.
+### Files
 
-- **Admin**
-  - All agent permissions.
-  - Access agent statistics and all tickets.
+- **Upload File**
+  - `POST /api/files/upload` (Multipart form-data)
+  
+- **Download File**
+  - `GET /api/files/:id`
+
+---
 
 ## Testing
 
-Backend tests use **Jest + Supertest** and live under `backend/src/tests`.
+Backend tests use **Jest + Supertest**.
 
-- Run **all tests**:
-
+Run all tests:
 ```bash
 cd backend
 npm test
 ```
 
-- Run only the **Ticket Lifecycle Tests**:
-
+Specific suites:
 ```bash
-cd backend
-npx jest src/tests/ticket.test.js
+npm test src/tests/ticket.test.js
+npm test src/tests/permissions.test.js
 ```
-
-- Run only the **Permission Tests**:
-
-```bash
-cd backend
-npx jest src/tests/permissions.test.js
-```
-
-Both test suites create their own users/tickets in the database and clean them up afterwards.
-
-## Project Structure (Simplified)
-
-```text
-backend/
-  src/
-    config/        # Database (Pool + schema init)
-    controllers/   # Auth, tickets, comments, files
-    middlewares/   # Auth, error handler
-    routes/        # /api/auth, /api/tickets, etc.
-    tests/         # ticket.test.js, permissions.test.js
-    app.js         # Express app + initDatabase()
-
-frontend/
-  src/
-    components/    # Layout, shared UI
-    pages/         # Login, Register, Dashboard, TicketDetail, CreateTicket
-    utils/         # api client, auth helpers
-```
-
-## Notes
-
-- Database connection is now **fully configurable via env vars** (no hardcoded passwords).
-- JWT secret should always be overridden in `.env` for real deployments.
-- File uploads are stored under `backend/uploads/` and served at `/uploads`.

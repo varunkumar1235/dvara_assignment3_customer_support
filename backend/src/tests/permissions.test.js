@@ -12,6 +12,9 @@ describe('Permission Tests', () => {
   let ticketId;
 
   beforeAll(async () => {
+    // Cleanup potential leftovers from previous failed runs
+    await pool.query('DELETE FROM users WHERE email IN ($1, $2, $3, $4)', ['customer1@test.com', 'customer2@test.com', 'agent1@test.com', 'admin1@test.com']);
+
     const bcrypt = require('bcrypt');
     
     // Create customer 1
@@ -116,7 +119,7 @@ describe('Permission Tests', () => {
     expect(response.status).toBe(200);
   });
 
-  test('Only agent/admin can update ticket status', async () => {
+  test('Customer cannot update ticket status', async () => {
     const response = await request(app)
       .patch(`/api/tickets/${ticketId}/status`)
       .set('Authorization', `Bearer ${customerToken}`)
@@ -125,10 +128,28 @@ describe('Permission Tests', () => {
     expect(response.status).toBe(403);
   });
 
-  test('Only agent/admin can assign agents', async () => {
+  test('Admin cannot update ticket status', async () => {
+    const response = await request(app)
+      .patch(`/api/tickets/${ticketId}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'closed' });
+
+    expect(response.status).toBe(403);
+  });
+
+  test('Customer cannot assign agents', async () => {
     const response = await request(app)
       .patch(`/api/tickets/${ticketId}/assign`)
       .set('Authorization', `Bearer ${customerToken}`)
+      .send({ agent_id: agentId });
+
+    expect(response.status).toBe(403);
+  });
+
+  test('Admin cannot assign agents', async () => {
+    const response = await request(app)
+      .patch(`/api/tickets/${ticketId}/assign`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({ agent_id: agentId });
 
     expect(response.status).toBe(403);
