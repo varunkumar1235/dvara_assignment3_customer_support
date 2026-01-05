@@ -75,7 +75,7 @@ const getTickets = async (req, res, next) => {
   try {
     const { role, id } = req.user;
 
-    // Check all tickets for SLA breaches before returning
+    // Check all tickets for SLA breaches and auto-close resolved tickets before returning
     const slaService = require("../services/slaService");
     await slaService.checkAllTicketsForSLA();
 
@@ -144,9 +144,10 @@ const getTicket = async (req, res, next) => {
     const { id } = req.params;
     const { role, id: userId } = req.user;
 
-    // Check for SLA breach and escalate if needed
+    // Check for SLA breach and escalate if needed, also check for auto-close
     const slaService = require("../services/slaService");
     await slaService.checkTicketSLA(id);
+    await slaService.checkAndAutoCloseResolvedTickets();
 
     const ticketResult = await pool.query(
       `SELECT t.*, 
@@ -246,24 +247,39 @@ const updateTicketStatus = async (req, res, next) => {
         });
     }
 
-    const updateFields = { updated_at: new Date() };
+    const now = new Date();
+    const updateFields = { updated_at: now };
+    let customerResponseDeadline = null;
+    
+    // If ticket is unassigned, assign it to the current agent
+    const agentIdToSet = ticket.agent_id || userId;
+    
     if (status === "resolved") {
-      updateFields.resolved_at = new Date();
-    }
-    if (status === "closed") {
-      updateFields.closed_at = new Date();
+      updateFields.resolved_at = now;
+      // Set customer response deadline to 5 minutes from now
+      customerResponseDeadline = new Date(now);
+      customerResponseDeadline.setMinutes(customerResponseDeadline.getMinutes() + 5);
+    } else if (status === "closed") {
+      updateFields.closed_at = now;
+      // Clear customer response deadline when closed
+      customerResponseDeadline = null;
+    } else {
+      // Clear customer response deadline when status changes from resolved to something else
+      customerResponseDeadline = null;
     }
 
     const result = await pool.query(
       `UPDATE tickets 
-       SET status = $1, updated_at = $2, resolved_at = $3, closed_at = $4
-       WHERE id = $5
+       SET status = $1, agent_id = $2, updated_at = $3, resolved_at = $4, closed_at = $5, customer_response_deadline = $6
+       WHERE id = $7
        RETURNING *`,
       [
         status,
+        agentIdToSet,
         updateFields.updated_at,
         updateFields.resolved_at || null,
         updateFields.closed_at || null,
+        customerResponseDeadline,
         id,
       ]
     );
@@ -365,10 +381,10 @@ const confirmResolved = async (req, res, next) => {
         .json({ error: "Ticket must be in resolved status to confirm" });
     }
 
-    // Update ticket to closed status
+    // Update ticket to closed status and clear customer response deadline
     const result = await pool.query(
       `UPDATE tickets 
-       SET status = 'closed', closed_at = $1, updated_at = $1
+       SET status = 'closed', closed_at = $1, updated_at = $1, customer_response_deadline = NULL
        WHERE id = $2
        RETURNING *`,
       [new Date(), id]
@@ -444,6 +460,7 @@ const rejectResolved = async (req, res, next) => {
            sla_deadline = $2,
            first_response_at = NULL,
            resolved_at = NULL,
+           customer_response_deadline = NULL,
            updated_at = $3
        WHERE id = $4
        RETURNING *`,
@@ -459,6 +476,101 @@ const rejectResolved = async (req, res, next) => {
   }
 };
 
+const deleteTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role, id: userId } = req.user;
+
+    // Only agents can delete tickets
+    if (role !== "agent") {
+      return res
+        .status(403)
+        .json({ error: "Only agents can delete tickets" });
+    }
+
+    // Get ticket and check permissions
+    const ticketResult = await pool.query(
+      "SELECT id, agent_id FROM tickets WHERE id = $1",
+      [id]
+    );
+
+    if (ticketResult.rows.length === 0) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const ticket = ticketResult.rows[0];
+
+    // Agent can only delete unassigned tickets or tickets assigned to them
+    if (ticket.agent_id && ticket.agent_id !== userId) {
+      return res
+        .status(403)
+        .json({
+          error:
+            "You can only delete unassigned tickets or tickets assigned to you",
+        });
+    }
+
+    // Delete the ticket (CASCADE will handle related comments and files)
+    await pool.query("DELETE FROM tickets WHERE id = $1", [id]);
+
+    res.json({ message: "Ticket deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAgentStatistics = async (req, res, next) => {
+  try {
+    const { role } = req.user;
+
+    // Only admins can view agent statistics
+    if (role !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Only admins can view agent statistics" });
+    }
+
+    // Get all agents with their ticket counts
+    const agentStatsQuery = `
+      SELECT 
+        u.id,
+        u.username,
+        u.email,
+        COUNT(CASE WHEN t.status = 'in_progress' THEN 1 END) as in_progress_count,
+        COUNT(CASE WHEN t.status = 'resolved' THEN 1 END) as resolved_count,
+        COUNT(CASE WHEN t.status = 'closed' THEN 1 END) as closed_count
+      FROM users u
+      LEFT JOIN tickets t ON u.id = t.agent_id
+      WHERE u.role = 'agent'
+      GROUP BY u.id, u.username, u.email
+      ORDER BY u.username
+    `;
+
+    const agentStatsResult = await pool.query(agentStatsQuery);
+
+    // Get count of unassigned tickets
+    const unassignedCountResult = await pool.query(
+      "SELECT COUNT(*) as count FROM tickets WHERE agent_id IS NULL"
+    );
+
+    const unassignedCount = parseInt(unassignedCountResult.rows[0].count, 10);
+
+    res.json({
+      agents: agentStatsResult.rows.map((agent) => ({
+        id: agent.id,
+        username: agent.username,
+        email: agent.email,
+        in_progress: parseInt(agent.in_progress_count, 10) || 0,
+        resolved: parseInt(agent.resolved_count, 10) || 0,
+        closed: parseInt(agent.closed_count, 10) || 0,
+      })),
+      unassigned_tickets: unassignedCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createTicket,
   getTickets,
@@ -467,4 +579,6 @@ module.exports = {
   assignAgent,
   confirmResolved,
   rejectResolved,
+  deleteTicket,
+  getAgentStatistics,
 };

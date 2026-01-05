@@ -112,6 +112,17 @@ const initDatabase = async () => {
       END $$;
     `);
 
+    // Add customer_response_deadline column if it doesn't exist
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name='tickets' AND column_name='customer_response_deadline') THEN
+          ALTER TABLE tickets ADD COLUMN customer_response_deadline TIMESTAMP;
+        END IF;
+      END $$;
+    `);
+
     // Update existing tickets to set default values
     await pool.query(`
       UPDATE tickets SET escalated = FALSE WHERE escalated IS NULL;

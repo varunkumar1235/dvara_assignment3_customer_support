@@ -11,6 +11,8 @@ const {
   assignAgent,
   confirmResolved,
   rejectResolved,
+  deleteTicket,
+  getAgentStatistics,
 } = require("../controllers/ticketController");
 const { authenticate, authorize } = require("../middlewares/auth");
 
@@ -76,5 +78,11 @@ router.post("/:id/confirm", confirmResolved);
 
 // Customers can reject resolved tickets
 router.post("/:id/reject", rejectResolved);
+
+// Only agents can delete tickets (unassigned or assigned to them)
+router.delete("/:id", authorize("agent"), deleteTicket);
+
+// Only admins can view agent statistics
+router.get("/stats/agents", authorize("admin"), getAgentStatistics);
 
 module.exports = router;

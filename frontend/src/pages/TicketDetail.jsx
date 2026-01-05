@@ -46,10 +46,52 @@ const TicketDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [status, setStatus] = useState("");
+  const [countdown, setCountdown] = useState(null);
 
   useEffect(() => {
     fetchTicket();
   }, [id]);
+
+  // Set up countdown timer for resolved tickets (not for closed tickets)
+  useEffect(() => {
+    if (
+      !ticket ||
+      ticket.status !== "resolved" ||
+      !ticket.customer_response_deadline
+    ) {
+      setCountdown(null);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const deadline = new Date(ticket.customer_response_deadline);
+      const now = new Date();
+      const diff = deadline - now;
+
+      if (diff <= 0) {
+        setCountdown({
+          expired: true,
+          text: "Time expired - ticket will be auto-closed",
+        });
+        // Refresh ticket to get updated status
+        setTimeout(() => fetchTicket(), 1000);
+        return;
+      }
+
+      const minutes = Math.floor(diff / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown({
+        expired: false,
+        text: `${minutes}m ${seconds}s remaining`,
+      });
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticket?.customer_response_deadline, ticket?.status, ticket?.id]);
 
   const fetchTicket = async () => {
     try {
@@ -93,6 +135,9 @@ const TicketDetail = () => {
       setComments([...comments, response.data.comment]);
       setCommentText("");
       setSelectedFile(null);
+
+      // Refresh ticket data to show updated agent assignment
+      await fetchTicket();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to add comment");
     } finally {
@@ -104,7 +149,8 @@ const TicketDetail = () => {
     try {
       await api.patch(`/tickets/${id}/status`, { status: newStatus });
       setStatus(newStatus);
-      setTicket({ ...ticket, status: newStatus });
+      // Refresh ticket data to show updated agent assignment
+      await fetchTicket();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to update status");
     }
@@ -355,14 +401,6 @@ const TicketDetail = () => {
             </Alert>
           </Box>
         )}
-        {role === "admin" && (
-          <Box sx={{ mt: 3 }}>
-            <Alert severity="info">
-              Admins can only view tickets. Only agents can update ticket
-              status.
-            </Alert>
-          </Box>
-        )}
       </Paper>
 
       {files.length > 0 && (
@@ -481,13 +519,6 @@ const TicketDetail = () => {
           </Alert>
         </Paper>
       )}
-      {role === "admin" && (
-        <Paper elevation={3} sx={{ p: 3 }}>
-          <Alert severity="info">
-            Admins can only view tickets. Only agents can respond to tickets.
-          </Alert>
-        </Paper>
-      )}
 
       {role === "customer" && (
         <Paper elevation={3} sx={{ p: 3 }}>
@@ -496,6 +527,26 @@ const TicketDetail = () => {
               <Alert severity="success" sx={{ mb: 2 }}>
                 This ticket has been resolved by an agent. Please confirm if the
                 issue is fixed or reject if you're not satisfied.
+                {countdown && (
+                  <Box sx={{ mt: 1 }}>
+                    <Chip
+                      label={countdown.text}
+                      color={countdown.expired ? "error" : "warning"}
+                      size="small"
+                      sx={{ fontWeight: "bold" }}
+                    />
+                    {countdown.expired && (
+                      <Typography
+                        variant="caption"
+                        color="error"
+                        sx={{ display: "block", mt: 0.5 }}
+                      >
+                        The ticket will be automatically closed. If you need to
+                        reopen this issue, please create a new ticket.
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Alert>
               <Box sx={{ display: "flex", gap: 2 }}>
                 <Button
@@ -503,7 +554,7 @@ const TicketDetail = () => {
                   color="success"
                   fullWidth
                   onClick={handleConfirmResolved}
-                  disabled={submitting}
+                  disabled={submitting || countdown?.expired}
                   size="large"
                 >
                   {submitting ? (
@@ -517,7 +568,7 @@ const TicketDetail = () => {
                   color="error"
                   fullWidth
                   onClick={handleRejectResolved}
-                  disabled={submitting}
+                  disabled={submitting || countdown?.expired}
                   size="large"
                 >
                   {submitting ? (

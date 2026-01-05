@@ -110,10 +110,39 @@ const checkAndEscalateTicket = async (ticketId) => {
 };
 
 /**
+ * Auto-close resolved tickets if customer doesn't respond within 5 minutes
+ */
+const checkAndAutoCloseResolvedTickets = async () => {
+  try {
+    const now = new Date();
+    const result = await pool.query(
+      `UPDATE tickets 
+       SET status = 'closed', 
+           closed_at = $1,
+           updated_at = $1,
+           customer_response_deadline = NULL
+       WHERE status = 'resolved' 
+         AND customer_response_deadline IS NOT NULL
+         AND customer_response_deadline < $1
+       RETURNING id`,
+      [now]
+    );
+
+    return result.rows.length;
+  } catch (error) {
+    console.error("Error auto-closing resolved tickets:", error);
+    throw error;
+  }
+};
+
+/**
  * Check all open tickets for SLA breaches
  */
 const checkAllTicketsForSLA = async () => {
   try {
+    // First, auto-close resolved tickets past customer response deadline
+    await checkAndAutoCloseResolvedTickets();
+
     // Check all non-closed tickets (including previously escalated ones)
     const ticketsResult = await pool.query(
       `SELECT id FROM tickets 
@@ -149,6 +178,7 @@ module.exports = {
   checkAndEscalateTicket,
   checkAllTicketsForSLA,
   checkTicketSLA,
+  checkAndAutoCloseResolvedTickets,
   FIRST_RESPONSE_TIME,
   RESOLUTION_TIME,
 };
