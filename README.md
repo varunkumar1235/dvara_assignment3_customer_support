@@ -8,6 +8,10 @@
 A full-stack helpdesk system with role-based access control, SLA-aware ticket lifecycle, comments, and file uploads.
 Frontend is a modern React + MUI dashboard; backend is Node/Express with PostgreSQL and JWT auth.
 
+## Demo Video
+
+[![Watch the demo](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+
 ## Features
 
 - **Role-Based Access Control**: Admin, Agent, and Customer roles.
