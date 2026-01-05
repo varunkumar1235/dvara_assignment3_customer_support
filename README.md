@@ -72,10 +72,14 @@ Frontend is a modern React + MUI dashboard; backend is Node/Express with Postgre
    ```
 
 3. **Start the Frontend**:
+
    ```bash
    npm run dev
    ```
+
    Access the app at `http://localhost:5173`.
+
+4. **It is important to note that the frontent is customer specific, meaning Register functionality is only for Customers, Login is for Admins, Agents and Customers. New Agents or Admins are created manually using CLI**
 
 ---
 
